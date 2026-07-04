@@ -1,5 +1,25 @@
 [1단계 개발 내용]
-Project Instructions for Codex.pdf 또는 Project Instructions for Codex.docx 문서를 분석하여 필요시 보완 설계를 진행한다. 
+1. Project Instructions for Codex.pdf 또는 Project Instructions for Codex.docx 문서이다.
+2. codex 용이 아닌데 claude 에서 진행시 문제젬을 확인하여 아래 사항으로 claude가 직접 조치/수정했다. 
+
+" Codex용 설계 문서를 검토한 결과 Claude 활용 시 실제로 문제가 되는 점 3가지를 발견했고,
+  원본(.docx/.pdf)은 건드리지 않고 docs/design/에 마크다운으로 변환·재구성하는 방식으로 해결했습니다. 커밋 a1baaa7로
+  push까지 완료.
+
+  발견한 문제와 조치:
+
+  1. Claude가 원본을 읽을 수 없음 — Read 도구는 .docx를 아예 못 읽고, PDF는 20페이지 단위 제한이 있어
+  planner/generator subagent가 설계를 참조하기 어려웠습니다. → pandoc으로 변환해 8개 문서(00_overview ~
+  07_task_breakdown + README)로 분리했습니다. 이제 subagent가 필요한 문서만 골라 읽을 수 있습니다.
+  2. Phase 번호 충돌 — 원본 태스크 분해 문서의 내부 "Phase 1~12"가 우리 CLAUDE.md의 Phase 1~9와 번호가 달라
+  planner가 혼동할 수 있었습니다. → 내부 단계를 "Step 1~12"로 바꾸고, CLAUDE.md Phase ↔ Step 매핑표를
+  07_task_breakdown.md 상단에 넣었습니다 (예: Phase 2 = Step 2+3, Phase 4 = Step 7~12).
+  3. Codex 전용 지시 중복 — 원본의 "파일 1"은 Codex용 AGENTS.md여서 CLAUDE.md와 역할이 겹쳤습니다. → 도구 중립적인
+  00_overview.md(목표/MVP 범위/아키텍처 규칙/승인 기준)로 전환하고, 프로젝트 규칙의 최상위 기준은 CLAUDE.md임을
+  README에 명시했습니다.
+
+  CLAUDE.md의 설계 문서 섹션도 docs/design/을 기준 문서로 가리키도록 갱신했습니다."
+
 
 [2단계 개발 내용]
 1. 1단계의 개발 내용은 SOP 편집용이라면, SOP 실행기를 설계/개발한다. 
