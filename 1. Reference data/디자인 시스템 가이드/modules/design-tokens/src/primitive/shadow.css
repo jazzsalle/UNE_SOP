@@ -1,0 +1,41 @@
+/* elevation */
+:root {
+  --elevation-01: 0 0 3px 0 rgba(0, 0, 0, 0.04),
+    0 4px 11px 0 rgba(0, 0, 0, 0.11);
+
+  --elevation-02: 0 0 3px 0 rgba(0, 0, 0, 0.04),
+    0 6px 13px 0 rgba(0, 0, 0, 0.13);
+
+  --elevation-03: 0 0 5px 0 rgba(0, 0, 0, 0.06),
+    0 8px 15px 0 rgba(0, 0, 0, 0.15);
+
+  --elevation-04: 0 0 5px 0 rgba(0, 0, 0, 0.06),
+    0 10px 17px 0 rgba(0, 0, 0, 0.18);
+
+  --elevation-05: 0 0 5px 0 rgba(0, 0, 0, 0.08),
+    0 10px 24px 0 rgba(0, 0, 0, 0.24);
+
+  --elevation-06: 0 0 7px 0 rgba(0, 0, 0, 0.08),
+    0 10px 32px 0 rgba(0, 0, 0, 0.32);
+
+  --elevation-07: 0 0 7px 0 rgba(0, 0, 0, 0.1),
+    0 12px 36px 0 rgba(0, 0, 0, 0.36);
+
+  --elevation-08: 0 0 7px 0 rgba(0, 0, 0, 0.1), 0 12px 40px 0 rgba(0, 0, 0, 0.4);
+
+  --selected-shadow: 0 0 0 2px #C2D3FF;
+}
+
+/* elevation (dark mode) */
+.dark {
+  --elevation-01: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --elevation-02: 0 2px 4px rgba(0, 0, 0, 0.24);
+  --elevation-03: 0 2px 8px rgba(0, 0, 0, 0.28);
+  --elevation-04: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --elevation-05: 0 6px 16px rgba(0, 0, 0, 0.32);
+  --elevation-06: 0 8px 24px rgba(0, 0, 0, 0.36);
+  --elevation-07: 0 0 7px rgba(0, 0, 0, 0.24), 0 8px 28px rgba(0, 0, 0, 0.36);
+  --elevation-08: 0 0 7px rgba(0, 0, 0, 0.3), 0 12px 40px rgba(0, 0, 0, 0.44);
+
+  --selected-shadow: 0 0 0 2px rgba(132, 168, 255, 0.50);
+}

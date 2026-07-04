@@ -1,0 +1,20 @@
+declare module "*.css";
+declare module "*.svg" {
+  const src: string;
+  export default src;
+}
+declare module "*.png" {
+  const src: string;
+  export default src;
+}
+declare module "*.jpg" {
+  const src: string;
+  export default src;
+}
+declare module "*.jpeg" {
+  const src: string;
+  export default src;
+}
+
+// src/types/design-tokens.d.ts
+declare module "@une-front/design-tokens";

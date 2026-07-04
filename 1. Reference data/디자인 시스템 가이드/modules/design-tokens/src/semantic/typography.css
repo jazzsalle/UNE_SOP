@@ -1,0 +1,46 @@
+/* Typography Utility Classes */
+/* 사용법: <h1 class="typo-title-lg font-bold"> */
+/* font-weight는 Tailwind의 font-normal/font-medium/font-bold 와 조합 */
+/* Title: Heading 용도 / Text: Body, Label, Caption, Badge 용도 */
+
+@utility typo-title-lg {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-6);
+  line-height: var(--line-height-150);
+  letter-spacing: var(--letter-spacing-base);
+}
+
+@utility typo-title-md {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-5);
+  line-height: var(--line-height-150);
+  letter-spacing: var(--letter-spacing-base);
+}
+
+@utility typo-title-sm {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-4);
+  line-height: var(--line-height-160);
+  letter-spacing: var(--letter-spacing-base);
+}
+
+@utility typo-text-lg {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-3);
+  line-height: var(--line-height-150);
+  letter-spacing: var(--letter-spacing-base);
+}
+
+@utility typo-text-md {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-2);
+  line-height: var(--line-height-140);
+  letter-spacing: var(--letter-spacing-base);
+}
+
+@utility typo-text-sm {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-1);
+  line-height: var(--line-height-150);
+  letter-spacing: var(--letter-spacing-base);
+}

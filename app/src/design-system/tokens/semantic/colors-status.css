@@ -1,0 +1,87 @@
+/* ============================================================
+ * Semantic Colors — brand / semantic (success · warning · error · info)
+ * Source: Figma "My Design System v0.1" › Foundations › Semantic Colors
+ * ============================================================ */
+:root {
+
+  /* ========== bg / brand ========== */
+  --color-bg-brand: #3c69fc;
+  --color-bg-brand-subtle: #f0f4ff;
+  --color-bg-brand-subtle-pressed: #e1e9ff;
+  --color-bg-accordion-open: var(--light-blue-20);             /* #f5f8ff — accordion 열림 헤더 배경 */
+  --color-bg-accordion-open-hover: var(--light-blue-25);       /* #f0f4ff — accordion 열림 헤더 호버 배경 */
+  --color-bg-accordion-open-active: var(--light-blue-50);      /* #e1e9ff — accordion 열림 헤더 눌림 배경 */
+  --color-bg-accordion-closed-hover: var(--grayscale-20);      /* #f9f9fb — accordion 닫힘 헤더 호버 배경 */
+  --color-bg-accordion-closed-active: var(--grayscale-25);     /* #f4f5f7 — accordion 닫힘 헤더 눌림 배경 */
+  --color-bg-accordion-content: #ffffff;                        /* accordion 콘텐츠 영역 배경 */
+  --color-text-accordion-content: var(--color-text-subtle);    /* #444a57 — accordion 콘텐츠 텍스트 */
+  --color-border-accordion: var(--color-interactive-neutral);  /* #ebecf0 — accordion 컨테이너 border */
+  --color-text-accordion-helper: var(--light-blue-200);        /* #84a8ff — accordion 열림 헤더 helperText */
+  --color-text-accordion-helper-disabled: var(--grayscale-100); /* #cecfd2 — accordion 비활성화 helperText */
+
+  /* ========== bg / warning ========== */
+  --color-bg-warning: #cc8400;
+  --color-bg-warning-subtle: #fff7e0;
+
+  /* ========== bg / success ========== */
+  --color-bg-success: #1d792b;
+  --color-bg-success-subtle: #ecfdf3;
+
+  /* ========== bg / info ========== */
+  --color-bg-info: #08bbae;
+  --color-bg-info-subtle: #e6f7f6;
+
+  /* ========== text ========== */
+  --color-text-on-brand: #ffffff;
+  --color-text-brand: #3c69fc;
+  --color-text-warning: #a86900;
+  --color-text-success: #186424;
+  --color-text-info: #07a69b;
+
+  /* ========== border ========== */
+  --color-border-brand: #3c69fc;
+  --color-border-warning: #cc8400;
+  --color-border-success: #1d792b;
+}
+
+.dark {
+
+  /* ========== bg / brand ========== */
+  --color-bg-brand: #477dff;
+  --color-bg-brand-subtle: #0a1128;
+  --color-bg-brand-subtle-pressed: #0e1733;
+  --color-bg-accordion-open: var(--dark-blue-25);              /* #0e1733 */
+  --color-bg-accordion-open-hover: var(--dark-blue-50);        /* #111c3d */
+  --color-bg-accordion-open-active: var(--dark-blue-75);       /* #15244d */
+  --color-bg-accordion-closed-hover: var(--grayscale-800);     /* #313644 — accordion 닫힘 헤더 호버 배경 */
+  --color-bg-accordion-closed-active: var(--grayscale-700);    /* #444a57 — accordion 닫힘 헤더 눌림 배경 */
+  --color-bg-accordion-content: var(--grayscale-900);          /* #1c202a */
+  --color-text-accordion-content: var(--grayscale-100);        /* #cecfd2 */
+  --color-border-accordion: var(--grayscale-800);              /* #313644 */
+  --color-text-accordion-helper: var(--light-blue-200);        /* #84a8ff — accordion 열림 헤더 helperText */
+  --color-text-accordion-helper-disabled: var(--grayscale-700); /* #444a57 — accordion 비활성화 helperText */
+
+  /* ========== bg / warning ========== */
+  --color-bg-warning: #ffb114;
+  --color-bg-warning-subtle: #15244d;
+
+  /* ========== bg / success ========== */
+  --color-bg-success: #29a33b;
+  --color-bg-success-subtle: #15244d;
+
+  /* ========== bg / info ========== */
+  --color-bg-info: #4fcfc1;
+  --color-bg-info-subtle: #15244d;
+
+  /* ========== text ========== */
+  --color-text-on-brand: #0a1128;
+  --color-text-brand: #477dff;
+  --color-text-warning: #ffb114;
+  --color-text-success: #29a33b;
+  --color-text-info: #4fcfc1;
+
+  /* ========== border ========== */
+  --color-border-brand: #477dff;
+  --color-border-warning: #e89a00;
+  --color-border-success: #238e33;
+}

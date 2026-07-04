@@ -1,0 +1,25 @@
+@import "tailwindcss";
+@import "../design-system/tokens/tokens.css";
+@custom-variant dark (&:where(.dark &));
+
+/* 디자인 시스템 typography 토큰은 rem 기반(1rem = 1px 전제)이므로 루트 폰트 크기를 고정한다 */
+html {
+  font-size: 1px;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+/* 전역 기본 스타일 — 시맨틱 토큰만 사용 */
+body {
+  background: var(--color-bg-muted);
+  color: var(--color-text-default);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-2);
+  line-height: var(--line-height-140);
+  letter-spacing: var(--letter-spacing-base);
+}

@@ -1,0 +1,11 @@
+/* - 상대적으로 중립 */
+/* - 대부분 비율과 리듬 */
+/* - 브랜드 바뀌어도 크게 안 바뀜 */
+/* 그래서 무조건 semantic으로 나누면 과함 */
+/* 의도가 생기는 지점까지만 나누는 게 정답 */
+:root {
+  --space-page-x: var(--space-4);
+  --space-page-y: var(--space-5);
+  --space-section-gap: var(--space-6);
+  --space-card-padding: var(--space-4);
+}

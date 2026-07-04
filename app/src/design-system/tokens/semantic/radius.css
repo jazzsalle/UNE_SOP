@@ -1,0 +1,7 @@
+/* - 서비스 톤(둥글둥글 / 각짐) */
+/* - 리브랜딩 시 체감 효과 큼 */
+/* - 여러 컴포넌트가 공유 */
+:root {
+  --radius-control: var(--radius-md);
+  --radius-surface: var(--radius-lg);
+}

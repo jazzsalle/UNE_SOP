@@ -1,0 +1,85 @@
+/* ============================================================
+ * Semantic Colors — interaction (action · focus-ring · icon)
+ * Source: Figma "My Design System v0.1" › Foundations › Semantic Colors
+ * ============================================================ */
+:root {
+
+  /* ========== icon ========== */
+  --color-icon-default: #686d78;
+  --color-icon-subtle: #888c94;
+  --color-icon-disabled: #a6a9af;
+  --color-icon-on-brand: #ffffff;
+  --color-icon-brand: #3c69fc;
+  --color-icon-danger: #d92d20;
+  --color-icon-warning: #cc8400;
+  --color-icon-success: #1d792b;
+  --color-icon-info: #08bbae;
+
+  /* ========== interactive / brand ========== */
+  --color-interactive-brand: #3c69fc;
+  --color-interactive-brand-hover: #345ce0;
+  --color-interactive-brand-pressed: #2c4ec4;
+
+  /* ========== interactive / neutral ========== */
+  --color-interactive-neutral: #ebecf0;
+  --color-interactive-neutral-hover: #dadbdd;
+  --color-interactive-neutral-pressed: #cecfd2;
+
+  /* ========== interactive / danger ========== */
+  --color-interactive-danger: #d92d20;
+  --color-interactive-danger-hover: #c4251b;
+
+  /* ========== control (checkbox · radio 등 폼 컨트롤 비선택 상태) ========== */
+  --color-control-border: var(--grayscale-300);         /* #888c94 */
+  --color-control-border-hover: var(--grayscale-400);   /* #787c87 */
+  --color-control-border-pressed: var(--grayscale-500); /* #686d78 */
+  --color-control-border-active: var(--grayscale-600);  /* #565b69 */
+  --color-control-bg-hover: var(--grayscale-25);        /* #f4f5f7 */
+  --color-control-bg-pressed: var(--grayscale-50);      /* #ebecf0 */
+  --color-control-text: var(--grayscale-800);            /* #313644 */
+
+  /* ========== chip 선택 상태 호버/눌림 배경 ========== */
+  --color-bg-chip-selected-hover: var(--light-blue-75);    /* #d2deff */
+  --color-bg-chip-selected-pressed: var(--light-blue-100); /* #c2d3ff */
+}
+
+.dark {
+
+  /* ========== icon ========== */
+  --color-icon-default: #a3beff;
+  --color-icon-subtle: #84a8ff;
+  --color-icon-disabled: #565b69;
+  --color-icon-on-brand: #0a1128;
+  --color-icon-brand: #477dff;
+  --color-icon-danger: #f04438;
+  --color-icon-warning: #ffb114;
+  --color-icon-success: #29a33b;
+  --color-icon-info: #4fcfc1;
+
+  /* ========== interactive / brand ========== */
+  --color-interactive-brand: #477dff;
+  --color-interactive-brand-hover: #6693ff;
+  --color-interactive-brand-pressed: #84a8ff;
+
+  /* ========== interactive / neutral ========== */
+  --color-interactive-neutral: var(--grayscale-700);       /* #444a57 */
+  --color-interactive-neutral-hover: var(--grayscale-600); /* #565b69 */
+  --color-interactive-neutral-pressed: var(--grayscale-500); /* #686d78 */
+
+  /* ========== interactive / danger ========== */
+  --color-interactive-danger: #f04438;
+  --color-interactive-danger-hover: #e5352e;
+
+  /* ========== control (checkbox · radio 등 폼 컨트롤 비선택 상태) ========== */
+  --color-control-border: var(--grayscale-500);         /* #686d78 */
+  --color-control-border-hover: var(--grayscale-400);   /* #787c87 */
+  --color-control-border-pressed: var(--grayscale-300); /* #888c94 */
+  --color-control-border-active: var(--grayscale-100);  /* #cecfd2 */
+  --color-control-bg-hover: var(--grayscale-800);       /* #313644 */
+  --color-control-bg-pressed: var(--grayscale-700);     /* #444a57 */
+  --color-control-text: var(--grayscale-100);             /* #cecfd2 */
+
+  /* ========== chip 선택 상태 호버/눌림 배경 ========== */
+  --color-bg-chip-selected-hover: var(--dark-blue-50);    /* #111c3d */
+  --color-bg-chip-selected-pressed: var(--dark-blue-75);  /* #15244d */
+}

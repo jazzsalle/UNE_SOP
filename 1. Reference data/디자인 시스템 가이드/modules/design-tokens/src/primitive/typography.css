@@ -1,0 +1,13 @@
+:root {
+  --font-family-base: "Spoqa Han Sans Neo", system-ui, sans-serif;
+  --font-size-1: 12rem;
+  --font-size-2: 14rem;
+  --font-size-3: 16rem;
+  --font-size-4: 20rem;
+  --font-size-5: 24rem;
+  --font-size-6: 32rem;
+  --line-height-140: 1.4;
+  --line-height-150: 1.5;
+  --line-height-160: 1.6;
+  --letter-spacing-base: -0.03em;
+}

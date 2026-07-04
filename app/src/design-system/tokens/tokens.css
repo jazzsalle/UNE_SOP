@@ -1,0 +1,14 @@
+@import "./primitive/colors.css";
+@import "./primitive/icon.css";
+@import "./primitive/radius.css";
+@import "./primitive/shadow.css";
+@import "./primitive/spacing.css";
+@import "./primitive/typography.css";
+
+@import "./semantic/colors.css";
+@import "./semantic/colors-status.css";
+@import "./semantic/colors-interaction.css";
+@import "./semantic/radius.css";
+@import "./semantic/spacing.css";
+@import "./semantic/typography.css";
+@import "./semantic/scrollbar.css";

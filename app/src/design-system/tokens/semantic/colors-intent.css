@@ -1,0 +1,11 @@
+/* DEPRECATED: 이 파일은 삭제 예정입니다.
+ * 기존 --color-intent-* 변수는 아래로 대체되었습니다.
+ *
+ *   --color-intent-primary   → --color-action-primary-default  (colors-interaction.css)
+ *   --color-intent-secondary → --color-action-secondary-default
+ *   --color-intent-danger    → --color-action-danger-default
+ *   --color-intent-success   → --color-bg-success-solid        (colors-status.css)
+ *   --color-intent-warning   → --color-bg-warning-solid
+ *   --color-intent-error     → --color-bg-error-solid
+ *   --color-intent-info      → --color-bg-info-solid
+ */

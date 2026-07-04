@@ -1,0 +1,65 @@
+/* ============================================================
+ * Semantic Colors — base surface / text / border
+ * Source: Figma "My Design System v0.1" › Foundations › Semantic Colors
+ * ============================================================ */
+:root {
+
+  /* ========== bg ========== */
+  --color-bg-surface: #ffffff;
+  --color-bg-elevated: #ffffff;
+  --color-bg-muted: #f4f5f7;
+  --color-bg-subtle: #f9f9fb;
+  --color-bg-overlay: #242935;
+  --color-bg-disabled: var(--grayscale-25);   /* #f4f5f7 */
+  --color-bg-neutral: var(--grayscale-300);  /* #888c94 */
+  --color-bg-neutral-hover: var(--grayscale-400); /* #787c87 */
+  --color-bg-danger: #d92d20;
+  --color-bg-danger-subtle: #fef3f2;
+
+  /* ========== text ========== */
+  --color-text-default: #1c202a;
+  --color-text-subtle: #444a57;
+  --color-text-secondary: #313644;
+  --color-text-disabled: #a6a9af;
+  --color-text-placeholder: #888c94;
+  --color-text-danger: #c4251b;
+
+  /* ========== border ========== */
+  --color-border-disabled: var(--grayscale-200); /* #a6a9af */
+  --color-border-default: #cecfd2;
+  --color-border-subtle: #dadbdd;
+  --color-border-strong: #a6a9af;
+  --color-border-focus: #3c69fc;
+  --color-border-danger: #d92d20;
+}
+
+.dark {
+
+  /* ========== bg ========== */
+  --color-bg-surface: #111c3d;
+  --color-bg-elevated: #15244d;
+  --color-bg-muted: #1a2b5c;
+  --color-bg-subtle: #0e1733;
+  --color-bg-overlay: #0a1128;
+  --color-bg-disabled: var(--grayscale-800);    /* #313644 */
+  --color-bg-neutral: var(--grayscale-500);  /* #686d78 */
+  --color-bg-neutral-hover: var(--grayscale-400); /* #787c87 */
+  --color-bg-danger: #f04438;
+  --color-bg-danger-subtle: #15244d;
+
+  /* ========== text ========== */
+  --color-text-default: #f5f8ff;
+  --color-text-subtle: #c2d3ff;
+  --color-text-secondary: #cecfd2;
+  --color-text-disabled: #565b69;
+  --color-text-placeholder: #686d78;
+  --color-text-danger: #f04438;
+
+  /* ========== border ========== */
+  --color-border-disabled: var(--grayscale-600); /* #565b69 */
+  --color-border-default: #203470;
+  --color-border-subtle: #1a2b5c;
+  --color-border-strong: #253d82;
+  --color-border-focus: #477dff;
+  --color-border-danger: #e5352e;
+}
