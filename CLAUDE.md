@@ -4,7 +4,7 @@
 
 ## 설계 문서
 
-- `1. Reference data/Project Instructions for Codex.docx` — 1차 POC 설계(PRD, 도메인 모델, 유저 플로우, 기능 요구사항 FR-001~020, API 스키마, 시드 데이터, 태스크 분해)
+- `docs/design/` — **1차 POC 설계 기준 문서** (개요, PRD, 도메인 모델, 유저 플로우, 기능 요구사항 FR-001~020, API 스키마, 시드 데이터, 태스크 분해). 원본 `1. Reference data/Project Instructions for Codex.docx`(.pdf)를 마크다운으로 변환·재구성한 것으로, 원본은 이력 보존용. 문서 내부 태스크 단계(Step 1~12)와 이 파일의 Phase 1~9 매핑은 `docs/design/07_task_breakdown.md` 참조.
 - `단계별 개발내용.txt` — 전체 6단계 로드맵
 - `1. Reference data/실내공간정보 구축 작업규정/` — Phase 6 공간 스키마 근거 (별표 2·3·5·6·10)
 - `1. Reference data/workplans_webbuilder/` — Phase 7 토폴로지 연동 근거 (개발팀의 3D 웹 저작도구 작업계획)
