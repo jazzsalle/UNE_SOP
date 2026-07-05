@@ -9,6 +9,7 @@ import { NODE_TEMPLATES } from "../../domain";
 import type { GraphNode, NodeType } from "../../domain";
 import { useStudio } from "../state/GraphStudioContext";
 import AssetPickerField from "./inspector/AssetPickerField";
+import PatrolRouteFields from "./inspector/PatrolRouteFields";
 import PortListSection from "./inspector/PortListSection";
 import PropertyField, { fieldInputStyle } from "./inspector/PropertyField";
 import SpaceScopeFields from "./inspector/SpaceScopeFields";
@@ -41,10 +42,13 @@ function asStringArray(value: unknown): string[] {
 }
 
 /**
- * space_scope/asset_filter 노드의 공간 참조 키를 전용 피커로 라우팅한다.
+ * space_scope/asset_filter/패트롤 sop_task 노드의 참조 키를 전용 피커로 라우팅한다.
  * - space_scope: siteId(string) 위치에서 SpaceScopeFields가 siteId+spaceIds를 함께 렌더,
  *   spaceIds 키는 중복 렌더를 피해 건너뛴다.
  * - asset_filter: assetIds(string[])를 AssetPickerField로.
+ * - sop_task(taskKind==="patrol"): topologySetId(string) 위치에서 PatrolRouteFields가
+ *   topologySetId+startNodeId+endNodeId+checkpointNodeIds 4개 속성을 함께 렌더,
+ *   나머지 3개 키는 건너뛴다.
  * 값 타입이 템플릿 기대와 다르면 기존 PropertyField로 폴백한다(파괴적 변경 금지).
  * 전용 피커에 해당하지 않으면 null을 반환한다.
  */
@@ -75,6 +79,36 @@ function renderSpatialField(
       Array.isArray(value)
     ) {
       // SpaceScopeFields(siteId 위치)에서 함께 렌더됨 — 여기서는 생략.
+      return <Fragment key={key} />;
+    }
+  }
+  if (
+    graphNode.type === "sop_task" &&
+    graphNode.properties["taskKind"] === "patrol"
+  ) {
+    if (key === "topologySetId" && typeof value === "string") {
+      const readString = (propKey: string): string => {
+        const raw = graphNode.properties[propKey];
+        return typeof raw === "string" ? raw : "";
+      };
+      return (
+        <PatrolRouteFields
+          key={key}
+          topologySetId={value}
+          startNodeId={readString("startNodeId")}
+          endNodeId={readString("endNodeId")}
+          checkpointNodeIds={asStringArray(graphNode.properties["checkpointNodeIds"])}
+          onPropertyChange={(propKey, propValue) =>
+            updateNodeProperty(nodeId, propKey, propValue)
+          }
+        />
+      );
+    }
+    if (
+      (key === "startNodeId" || key === "endNodeId" || key === "checkpointNodeIds") &&
+      typeof graphNode.properties["topologySetId"] === "string"
+    ) {
+      // PatrolRouteFields(topologySetId 위치)에서 함께 렌더됨 — 여기서는 생략.
       return <Fragment key={key} />;
     }
   }

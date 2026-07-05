@@ -1,10 +1,11 @@
 /**
- * SOP 그룹 노드 템플릿 — 개별 임무(SOP Task), 임무 묶음(SOP Group), 점검표(Checklist)를 정의한다.
+ * SOP 그룹 노드 템플릿 — 개별 임무(SOP Task), 임무 묶음(SOP Group), 점검표(Checklist),
+ * 토폴로지 순회 임무(Patrol Route)를 정의한다.
  * SOP 노드는 실행 흐름/조건 결과를 받아 임무와 임무 상태를 산출하는 그래프의 실행 단위다.
  */
 import type { NodeTemplate } from "../types";
 
-/** SOP 그룹 템플릿 3종 — SOP Task / SOP Group / Checklist. */
+/** SOP 그룹 템플릿 4종 — SOP Task / SOP Group / Checklist / Patrol Route. */
 export const SOP_TEMPLATES: NodeTemplate[] = [
   {
     templateId: "tpl-sop-task",
@@ -62,6 +63,30 @@ export const SOP_TEMPLATES: NodeTemplate[] = [
       { id: "trigger_in", label: "Trigger", direction: "input", dataType: "execution_flow", required: true },
       { id: "status_out", label: "Status", direction: "output", dataType: "mission_status" },
       { id: "record_out", label: "Record", direction: "output", dataType: "record" },
+    ],
+    accentColorToken: "--color-bg-brand",
+  },
+  {
+    templateId: "tpl-sop-patrol",
+    nodeType: "sop_task",
+    group: "sop",
+    label: "Patrol Route",
+    description: "토폴로지 시작~종료 경로를 순회하며 점검 포인트를 차례로 점검하는 패트롤 임무 단위.",
+    defaultProperties: {
+      title: "",
+      assigneeRole: "로봇개",
+      dueMinutes: 30,
+      instructions: "",
+      taskKind: "patrol",
+      topologySetId: "",
+      startNodeId: "",
+      endNodeId: "",
+      checkpointNodeIds: [],
+    },
+    ports: [
+      { id: "trigger_in", label: "Trigger", direction: "input", dataType: "execution_flow", required: true },
+      { id: "mission_out", label: "Mission", direction: "output", dataType: "mission" },
+      { id: "status_out", label: "Status", direction: "output", dataType: "mission_status" },
     ],
     accentColorToken: "--color-bg-brand",
   },

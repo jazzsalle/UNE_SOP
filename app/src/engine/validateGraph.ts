@@ -10,6 +10,8 @@
  *   6. 순환 참조        → 규칙 6 (checkCycles, error)
  * 추가 규칙 7. 미응답 분기(branch timeout_out 미연결) → warning.
  * 추가 규칙 8. 공간 스키마 참조(space_scope siteId/spaceIds, asset_filter assetIds) → warning/info.
+ * 추가 규칙 9. 패트롤 토폴로지 참조(sop_task taskKind==="patrol"의 topologySetId/startNodeId/
+ *              endNodeId/checkpointNodeIds) → error/warning.
  */
 import type {
   GraphNode,
@@ -18,7 +20,14 @@ import type {
   ValidationIssue,
   ValidationResult,
 } from "../domain";
-import { findFacility, findSpace, getSite } from "../domain";
+import {
+  findFacility,
+  findPath,
+  findSpace,
+  findTopologyNode,
+  getSite,
+  getTopologySet,
+} from "../domain";
 import { findCycles, reachableFrom } from "./traversal";
 
 /** 빈 문자열/빈 배열/undefined/null은 "미입력"으로 취급한다. */
@@ -413,8 +422,111 @@ function checkSpatialReferences(graph: SOPGraph, issues: ValidationIssue[]): voi
 }
 
 /* ------------------------------------------------------------------ */
+/* 규칙 9 — 패트롤 토폴로지 참조 (error/warning, 추가 규칙)               */
+/* ------------------------------------------------------------------ */
 
-/** SOPGraph 전체를 8개 규칙으로 검증한다. error 이슈가 하나도 없으면 valid=true. */
+/** properties의 문자열 속성을 trim해 읽는다(비문자열은 빈 문자열 취급). */
+function readTrimmedString(props: Record<string, unknown>, key: string): string {
+  const value = props[key];
+  return typeof value === "string" ? value.trim() : "";
+}
+
+/**
+ * taskKind==="patrol"인 sop_task의 토폴로지 참조를 토폴로지 레지스트리로 해석한다.
+ * (a) topologySetId 미지정 또는 getTopologySet()에 없으면 error — 순회할 토폴로지 부재.
+ * (b) startNodeId/endNodeId 미지정 또는 findTopologyNode()에 없으면 error.
+ * (c) 셋·시작·종료가 모두 유효한데 findPath()가 null이면 error — 도달 불가 경로.
+ * (d) checkpointNodeIds 원소가 셋에 없거나 계산된 경로 위에 없으면 warning —
+ *     임무는 실행 가능하나 해당 점검 포인트를 경유하지 않으므로 경고에 그친다.
+ * 공간 참조(규칙 8)와 달리 시작/종료는 error로 둔다 — 경로가 해석되지 않으면
+ * 패트롤 임무 자체가 실행 불가능하기 때문이다.
+ */
+function checkPatrolTopologyReferences(graph: SOPGraph, issues: ValidationIssue[]): void {
+  for (const node of graph.nodes) {
+    if (node.type !== "sop_task" || node.properties.taskKind !== "patrol") continue;
+
+    // (a) 토폴로지 셋 해석
+    const setId = readTrimmedString(node.properties, "topologySetId");
+    const set = setId === "" ? null : getTopologySet(setId);
+    if (setId === "") {
+      issues.push({
+        level: "error",
+        nodeId: node.id,
+        message: `"${node.label}" — 패트롤 임무에 topologySetId(토폴로지 셋)가 지정되지 않았습니다.`,
+      });
+    } else if (set === null) {
+      issues.push({
+        level: "error",
+        nodeId: node.id,
+        message: `"${node.label}" — 등록되지 않은 패트롤 토폴로지 셋입니다: ${setId}`,
+      });
+    }
+
+    // (b) 시작/종료 노드 해석 — 셋이 유효할 때만 존재 여부를 검사한다.
+    let endpointsResolved = set !== null;
+    for (const [key, labelKo] of [
+      ["startNodeId", "시작"],
+      ["endNodeId", "종료"],
+    ] as const) {
+      const topologyNodeId = readTrimmedString(node.properties, key);
+      if (topologyNodeId === "") {
+        endpointsResolved = false;
+        issues.push({
+          level: "error",
+          nodeId: node.id,
+          message: `"${node.label}" — 패트롤 ${labelKo} 노드(${key})가 지정되지 않았습니다.`,
+        });
+      } else if (set !== null && findTopologyNode(setId, topologyNodeId) === null) {
+        endpointsResolved = false;
+        issues.push({
+          level: "error",
+          nodeId: node.id,
+          message: `"${node.label}" — 토폴로지 셋에 없는 패트롤 ${labelKo} 노드입니다: ${topologyNodeId}`,
+        });
+      }
+    }
+
+    // (c) 도달 가능성 — 셋·시작·종료가 모두 유효할 때만 경로를 계산한다.
+    let pathNodeIds: Set<string> | null = null;
+    if (set !== null && endpointsResolved) {
+      const startNodeId = readTrimmedString(node.properties, "startNodeId");
+      const endNodeId = readTrimmedString(node.properties, "endNodeId");
+      const path = findPath(set, startNodeId, endNodeId);
+      if (path === null) {
+        issues.push({
+          level: "error",
+          nodeId: node.id,
+          message: `"${node.label}" — 패트롤 경로를 찾을 수 없습니다: ${startNodeId} → ${endNodeId} (토폴로지에서 도달 불가).`,
+        });
+      } else {
+        pathNodeIds = new Set(path.nodeIds);
+      }
+    }
+
+    // (d) 점검 포인트 — 셋이 유효할 때만 검사한다(셋 오류는 이미 error로 보고됨).
+    if (set !== null) {
+      for (const checkpointId of readStringArray(node.properties, "checkpointNodeIds")) {
+        if (findTopologyNode(setId, checkpointId) === null) {
+          issues.push({
+            level: "warning",
+            nodeId: node.id,
+            message: `"${node.label}" — 토폴로지 셋에 없는 점검 포인트입니다: ${checkpointId}`,
+          });
+        } else if (pathNodeIds !== null && !pathNodeIds.has(checkpointId)) {
+          issues.push({
+            level: "warning",
+            nodeId: node.id,
+            message: `"${node.label}" — 점검 포인트 ${checkpointId}가 계산된 패트롤 경로 위에 없습니다.`,
+          });
+        }
+      }
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ */
+
+/** SOPGraph 전체를 9개 규칙으로 검증한다. error 이슈가 하나도 없으면 valid=true. */
 export function validateGraph(graph: SOPGraph): ValidationResult {
   const issues: ValidationIssue[] = [];
   checkRequiredInputPorts(graph, issues); // 1. 필수 입력 포트
@@ -425,6 +537,7 @@ export function validateGraph(graph: SOPGraph): ValidationResult {
   checkCycles(graph, issues); // 6. 순환 참조
   checkBranchTimeoutPath(graph, issues); // 7. 미응답 분기(추가 규칙)
   checkSpatialReferences(graph, issues); // 8. 공간 스키마 참조(추가 규칙)
+  checkPatrolTopologyReferences(graph, issues); // 9. 패트롤 토폴로지 참조(추가 규칙)
 
   return {
     valid: !issues.some((issue) => issue.level === "error"),

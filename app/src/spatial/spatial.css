@@ -276,6 +276,127 @@
   stroke-width: 0.3;
 }
 
+/* ── 토폴로지 오버레이 (Phase 7) ─────────────────────────────
+ * webbuilder 토폴로지 노드/링크를 층 평면 위에 겹쳐 그린다.
+ * 단위는 viewBox 사용자 좌표(m). 색은 전부 semantic 토큰 var()만 사용한다. */
+
+/* 링크 선 — 노드 원 아래에 깔리는 기본 실선 */
+.topology-link {
+  stroke: var(--color-border-strong);
+  stroke-width: 0.18;
+  stroke-linecap: round;
+}
+
+/* one-way 링크 — 화살표(.topology-link__arrow)로 방향을 표시, 선 자체는 동일 색 유지 */
+.topology-link--one-way {
+  stroke-dasharray: 1 0.4;
+}
+
+/* one-way 방향 화살표 삼각형 — 링크 중간에서 target 방향을 가리킨다 */
+.topology-link__arrow {
+  fill: var(--color-border-strong);
+  pointer-events: none;
+}
+
+/* 층간(vertical) 링크 스터브 — 계단/램프 등 타 층 연결을 짧은 점선으로 표시 */
+.topology-link--vertical {
+  stroke-dasharray: 0.45 0.35;
+  stroke-width: 0.24;
+}
+
+/* 노드 원 공통 — nodeTypeCode별 채움색은 variant 클래스가 정의 */
+.topology-node {
+  stroke: var(--color-bg-surface);
+  stroke-width: 0.12;
+  cursor: pointer;
+}
+
+.topology-node:hover {
+  stroke: var(--color-border-focus);
+  stroke-width: 0.2;
+}
+
+.topology-node--selected {
+  stroke: var(--color-border-focus);
+  stroke-width: 0.28;
+}
+
+/* 일반 보행 노드 — info */
+.topology-node--normal {
+  fill: var(--color-bg-info);
+}
+
+/* 수직 이동 노드(계단/램프/에스컬레이터) — warning */
+.topology-node--stair,
+.topology-node--ramp,
+.topology-node--escalator {
+  fill: var(--color-bg-warning);
+}
+
+/* 비상구 노드 — danger */
+.topology-node--exit {
+  fill: var(--color-bg-danger);
+}
+
+/* 점검 포인트(metadata.checkpoint) 이중 링 — 노드 원 바깥의 빈 원 */
+.topology-node--checkpoint {
+  fill: none;
+  stroke: var(--color-border-strong);
+  stroke-width: 0.14;
+  pointer-events: none;
+}
+
+/* 툴바 토폴로지 그룹 — 셋 셀렉트 + 삭제/임포트 버튼을 우측에 모은다 */
+.spatial-page__topo-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.spatial-page__topo-btn {
+  height: 30px;
+  padding: 0 10px;
+  margin-bottom: 8px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-control);
+  color: var(--color-text-default);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.spatial-page__topo-btn:hover {
+  border-color: var(--color-border-focus);
+}
+
+/* 임포트 셋 삭제 버튼 — danger 텍스트/보더 */
+.spatial-page__topo-btn--danger {
+  border-color: var(--color-border-danger);
+  color: var(--color-text-danger);
+}
+
+/* ── TopologyImportDialog 보조 (본체는 runtime.css .sim-dialog__* 재사용) ── */
+
+/* .json 파일 선택 input */
+.topology-import__file {
+  color: var(--color-text-subtle);
+}
+
+/* export JSON textarea — 붙여넣기 편의상 기본보다 높게 */
+.topology-import__textarea {
+  min-height: 160px;
+}
+
+/* 임포트 파서 오류 목록 — 항목 색은 .sim-dialog__error(danger 토큰) */
+.topology-import__errors {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 /* ── SpaceDetailPanel ───────────────────────────────────────── */
 
 .space-detail {
@@ -361,4 +482,39 @@
 .space-detail__label-hint {
   margin-left: 6px;
   color: var(--color-text-placeholder);
+}
+
+/* 토폴로지 노드 metadata JSON 원문 — pre라 줄바꿈 유지 + 넘침 줄바꿈 */
+.topology-metadata {
+  white-space: pre-wrap;
+}
+
+/* 토폴로지 이웃 목록 — 방향 뱃지 + 표시명 (+ 타 층 floorName 힌트) */
+.topology-neighbors {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.topology-neighbors__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-default);
+}
+
+/* 방향 뱃지 — ↔(양방향)/→(단방향) */
+.topology-neighbors__dir {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 18px;
+  background: var(--color-bg-muted);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-control);
+  color: var(--color-text-subtle);
 }

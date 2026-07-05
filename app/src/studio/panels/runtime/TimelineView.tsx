@@ -14,6 +14,7 @@ const KIND_DOT_TOKEN: Record<TimelineEntry["kind"], string> = {
   asset: "--color-bg-info",
   condition: "--color-bg-warning",
   mission: "--color-bg-brand",
+  patrol: "--color-bg-info",
   notification: "--color-bg-info",
   response: "--color-bg-success",
   escalation: "--color-bg-danger",

@@ -14,6 +14,8 @@ const LOG_KIND_LABEL: Record<ExecutionLogKind, string> = {
   MISSION_COMPLETED: "임무 완료",
   MISSION_DELAYED: "임무 지연",
   MISSION_FAILED: "임무 실패",
+  PATROL_WAYPOINT: "패트롤 이동",
+  PATROL_CHECKPOINT: "점검 수행",
   NOTIFICATION_SENT: "상황 전파",
   NOTIFICATION_ACKED: "전파 확인",
   BOARD_RECORDED: "상황판 기록",

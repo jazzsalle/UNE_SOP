@@ -4,7 +4,7 @@
 2026-07-05
 
 ## Current goal
-Phase 7 — 4단계: webbuilder 토폴로지(내비 메시 기반 노드/링크) 구조 분석 → 토폴로지 스키마 연결 설계, 층별/특정 토폴로지 셋 임포트 및 SOP 그래프 연동 컴포넌트(예: 로봇개 패트롤 시나리오) (`/phase-run 7`로 시작)
+Phase 8 — 5단계: 외부 현장 점검자/안전관리자가 상황전파를 수신하고 조치결과를 회신하면 실행이력 로그·대시보드에 반영되는 웹앱 (`/phase-run 8`로 시작)
 
 ## Done this session
 - 2026-07-04: 하네스 부트스트랩 완료 — planner/generator/evaluator subagent, phase-run/handoff/resume-work 스킬, CLAUDE.md(Phase 1~9 정의), evaluation_criteria.md, SessionStart hook 생성. 설계 문서(Project Instructions for Codex + 단계별 개발내용.txt) 분석 및 9개 Phase 분해 확정.
@@ -15,13 +15,14 @@ Phase 7 — 4단계: webbuilder 토폴로지(내비 메시 기반 노드/링크)
 - 2026-07-05: **Phase 4 완료 (evaluator PASS) — 1단계(POC) 완료 기준 충족** — `app/src/engine/`(React 무의존 순수 모듈: normalizeGraph/validateGraph 6종 규칙+미응답 분기 경고/compileGraph BFS 경로 계산+트리거 매칭+조건 평가/simulate/runtimeMock 임무·전파·응답·상황판·타임라인/storage localStorage `sop-studio:graphs`), `domain/seeds/` 도메인 시드 4종(LH2 승인 기준 플로우 Event→Zone→Sensor→Condition→SOP Group→SMS→Branch→Board+Escalation, 발전소/안전한국훈련/일반 사업장, 샘플 EventContext 5건), Context 확장(runValidate/runCompile/runSimulate/loadDomainTemplate/selectNode)+graphIO 왕복 변환, StudioToolbar(템플릿 로드/Validate/Compile/Simulate), ValidationPanel(이슈 클릭→노드 포커스+JSON 프리뷰·복사·다운로드), SimulateDialog+RuntimePreviewPanel 6섹션+TimelineView, 실행경로 캔버스 하이라이트(sim-node/edge active·dimmed), BottomTabs(시뮬레이션 시 Runtime Preview 자동 전환). 시드 4종 왕복 검증 error 0, 시뮬레이션 26체크 PASS. 계획 기록: `docs/plans/phase-4.md`
 - 2026-07-05: **Phase 5 완료 (evaluator PASS) — 2단계 완료** — `engine/executor.ts`(createRun/applyExecutorAction 불변 리듀서 상태 머신: SENT→RUNNING→COMPLETED, TICK 기반 dueMinutes 초과 DELAYED, FAIL_MISSION, ACK_NOTIFICATION; React/localStorage 무의존), `executionTypes.ts`(ExecutionRun/ExecutionLogEntry — 장소/시간/임무내용/상황전파 4필드 전 로그 필수), `runStorage.ts`(localStorage `sop-studio:runs` + same-tab 실시간 반영용 subscribeRuns), App 셸 Studio|Dashboard 뷰 전환(두 뷰 동시 마운트 + display:none — RF 캔버스 상태 보존), Studio 하단 Execution 탭(이벤트 선택→실행 시작(자동 Compile)→임무 착수/완료/실패 버튼+TICK+로그 테이블, 매 변경 saveRun), 전자상황판 대시보드(`dashboard/` RunListPanel + RunDetailPanel: 요약/임무 현황/상황전파/상황판 기록 4필드 카드/ExecutionLogTable 6열, 훈련·실제 공통 점검 표기, 실시간 갱신). 실행기 검증 47체크+종단 42assert PASS. 계획 기록: `docs/plans/phase-5.md`
 - 2026-07-05: **Phase 6 완료 (evaluator PASS) — 3단계 완료** — `docs/spatial/` 작업규정 분석 문서 7건(별표 2 레이어 분류/별표 3 표준데이터 11종 객체유형/별표 5 명명규칙+시설구분코드 전표/별표 6 속성 QAL·SLP·DIR·SKT·HCP/별표 10 품질기준/스키마 매핑 결정), `app/src/domain/spatial/`(SpatialSite·Floor·Space·Facility 타입 + DIVISION 12종·CLASSIFY 8종 코드 테이블 + naming build/parse 왕복 함수 — 기본키 38자, 규정 원문 "41"은 합산 오기로 문서화), 검증용 건물(층 3/공간 21/시설물 16, footprint+높이 3D 지오메트리, 전 id 명명 함수 생성) + 시드 4도메인 사이트 + registry 조회 API, 시드 4종 공간 id 표준 전환(SITE-*→UFID 17자 등), validateGraph 규칙 8(공간 참조 warning/info), PropertyInspector 공간 피커(SpaceScopeFields/AssetPickerField — 미등록 id 경고+값 보존), SimulateDialog 레지스트리 셀렉트, App 3뷰째 "공간 모델"(SVG 층 평면 + 명명 분해 상세). 계획 기록: `docs/plans/phase-6.md`
+- 2026-07-05: **Phase 7 완료 (evaluator PASS) — 4단계 완료** — `docs/topology/` webbuilder 분석 문서 3건(노드 9필드 export 계약/생성 3방식/수직 연결 p0·p1·p2 체인/gltf extras 포맷/A*), `app/src/domain/topology/`(TopologyNodeData·TopologySet·TopologyLink 타입 + parseTopologyNodes 3형태 임포트 + deriveLinks(both/one-way/vertical) + A* pathFinder + 샘플 셋 topo-verification-building 26노드·계단 2세트·점검 포인트 4 + registry localStorage 영속), SOP 연동은 신규 NodeType 없이 `tpl-sop-patrol`(sop_task taskKind:"patrol", 29번째 템플릿) + validateGraph 규칙 9(토폴로지 참조/도달 불가 error) + PatrolRouteFields 인스펙터(경로 미리보기) + RuntimeMission.patrol/타임라인 patrol 엔트리/실행기 PATROL_WAYPOINT·CHECKPOINT 로그, 5번째 시드 "로봇개 야간 순찰"(왕복 validate error 0, 경로 12노드 57.8m), 공간 모델 뷰 토폴로지 오버레이(층별 필터/one-way 화살표/vertical 점선/checkpoint 링)+TopologyImportDialog. 기존 시드 4종 simulate 결과 바이트 단위 불변 확인. 계획 기록: `docs/plans/phase-7.md`
 
 ## In progress
 - 없음
 
 ## Next steps
-1. `/phase-run 7` — workplans_webbuilder 분석 → 토폴로지 스키마(노드/링크, 내비 메시, 수직 연결) + 층별 토폴로지 임포트 + SOP 그래프 연동(로봇개 패트롤 시나리오) (4단계)
-2. Phase 8 — 조치결과 회신 웹앱 (5단계)
+1. `/phase-run 8` — 외부 점검자/안전관리자용 상황전파 수신·조치결과 회신 웹앱 → 실행이력 로그·대시보드 반영 (5단계)
+2. Phase 9 — 통합 seed data + 시나리오 실행기 + WebGL 뷰어 + 조작 튜토리얼 (6단계)
 
 ## Blockers
 - 없음

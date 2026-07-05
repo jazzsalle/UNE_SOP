@@ -153,6 +153,21 @@ export interface RuntimeMission {
   assigneeRole?: string;
   status: "SENT" | "RUNNING" | "COMPLETED" | "DELAYED" | "FAILED";
   dueMinutes?: number;
+  /**
+   * 패트롤 경로 정보 — taskKind "patrol" 임무에서 토폴로지 셋/시작/종료 노드가
+   * 해석되면 findPath(A*) 결과로 채운다. 비패트롤 임무 또는 셋/경로 미해석 시
+   * undefined로 남겨 기존 임무 데이터와 하위 호환을 유지한다.
+   */
+  patrol?: {
+    /** 참조 토폴로지 셋 id (TopologySet.setId). */
+    topologySetId: string;
+    /** 시작→종료 A* 경로의 토폴로지 노드 id 체인(양 끝 포함). */
+    routeNodeIds: string[];
+    /** 경로상 점검 포인트 노드 id — sop_task 속성 checkpointNodeIds 중 경로에 포함된 것. */
+    checkpointNodeIds: string[];
+    /** 경로 총 이동 거리(m). */
+    distanceM: number;
+  };
 }
 
 /** 실행 계획에 포함된 상황전파 — 채널, 대상, 전달 상태를 추적한다. */

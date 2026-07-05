@@ -71,6 +71,7 @@ export interface TimelineEntry {
     | "asset"
     | "condition"
     | "mission"
+    | "patrol"
     | "notification"
     | "response"
     | "escalation"

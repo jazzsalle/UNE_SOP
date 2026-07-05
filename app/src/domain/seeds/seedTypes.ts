@@ -6,12 +6,13 @@ import type { EventContext, GraphNode, SOPGraph } from "../types";
 import { createNodeFromTemplate } from "../factory";
 import { getTemplate } from "../templates";
 
-/** 시드가 지원하는 도메인 식별자 4종 — 액화수소/발전소/안전한국훈련/일반 사업장. */
+/** 시드가 지원하는 도메인 식별자 5종 — 액화수소/발전소/안전한국훈련/일반 사업장/로봇개 패트롤. */
 export type SeedDomain =
   | "lh2_plant"
   | "power_plant"
   | "safety_korea_drill"
-  | "general_workplace";
+  | "general_workplace"
+  | "robot_patrol";
 
 /** 도메인 템플릿 시드 — 캔버스에 즉시 배치 가능한 SOPGraph와 시뮬레이션용 샘플 이벤트 묶음. */
 export interface DomainTemplateSeed {

@@ -15,7 +15,7 @@ import type { BoardRecordMock } from "./types";
 /** 실행(run)의 전체 상태 — 진행 중 / 정상 종료 / 실패 종료. */
 export type ExecutionRunStatus = "RUNNING" | "COMPLETED" | "FAILED";
 
-/** 실행이력 로그 항목의 구분 — run 수명주기, 임무 전이, 상황전파, 상황판 기록 11종. */
+/** 실행이력 로그 항목의 구분 — run 수명주기, 임무 전이, 패트롤 경유, 상황전파, 상황판 기록 13종. */
 export type ExecutionLogKind =
   | "RUN_STARTED"
   | "MISSION_SENT"
@@ -23,6 +23,8 @@ export type ExecutionLogKind =
   | "MISSION_COMPLETED"
   | "MISSION_DELAYED"
   | "MISSION_FAILED"
+  | "PATROL_WAYPOINT"
+  | "PATROL_CHECKPOINT"
   | "NOTIFICATION_SENT"
   | "NOTIFICATION_ACKED"
   | "BOARD_RECORDED"

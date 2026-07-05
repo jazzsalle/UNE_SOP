@@ -5,7 +5,7 @@
  * 임무/상황전파 상태 전이와 실행이력 로그를 기록한다.
  *
  * 임무 상태 전이표 (docs/plans/phase-5.md "선행 판단 4" 고정 규칙):
- * - START_MISSION:    SENT → RUNNING
+ * - START_MISSION:    SENT → RUNNING (patrol 임무는 경로 경유 PATROL_WAYPOINT/CHECKPOINT 로그 동반)
  * - COMPLETE_MISSION: RUNNING | DELAYED → COMPLETED (지연 완료 허용)
  * - FAIL_MISSION:     SENT | RUNNING | DELAYED → FAILED
  * - ACK_NOTIFICATION: SENT → ACKED
@@ -16,6 +16,7 @@
  * 영속화는 UI 레이어가 runStorage로 수행한다(순수성 유지).
  */
 import type { EventContext, RuntimeMission, SOPGraph } from "../domain";
+import { findTopologyNode } from "../domain/topology";
 import type { BoardRecordMock, SimulateOptions } from "./types";
 import type {
   ExecutionLogKind,
@@ -86,12 +87,14 @@ function makeRunId(eventId: string): string {
   return `RUN-${eventId}-${uuid.slice(0, 8)}`;
 }
 
-/** 로그 추가 입력 — missionSummary/notificationSummary 미지정 시 run 수준 요약으로 폴백. */
+/** 로그 추가 입력 — missionSummary/notificationSummary 미지정 시 run 수준 요약,
+ * location 미지정 시 이벤트 발생 장소로 폴백. */
 interface LogInput {
   kind: ExecutionLogKind;
   message: string;
   nodeId?: string;
   missionId?: string;
+  location?: string;
   missionSummary?: string;
   notificationSummary?: string;
 }
@@ -109,7 +112,7 @@ function pushLog(draft: ExecutionRun, input: LogInput): void {
     nodeId: input.nodeId,
     missionId: input.missionId,
     message: input.message,
-    location: locationOf(draft.eventContext),
+    location: input.location ?? locationOf(draft.eventContext),
     missionSummary: input.missionSummary ?? summarizeMissions(draft.missions),
     notificationSummary: input.notificationSummary ?? summarizeNotifications(draft.notifications),
   });
@@ -278,10 +281,38 @@ function transitionMission(
     missionSummary: mission.title,
   });
 
+  // 패트롤 임무 착수 — 경로 노드 순서대로 이동/점검 로그를 잇는다(1차 POC 일괄 기록).
+  if (nextStatus === "RUNNING" && mission.patrol) {
+    logPatrolRoute(draft, mission);
+  }
+
   if (nextStatus === "COMPLETED" || nextStatus === "FAILED") {
     finalizeIfSettled(draft);
   }
   return draft;
+}
+
+/**
+ * 패트롤 경로 로그 — mission.patrol.routeNodeIds 순서대로 경유 로그를 남긴다.
+ * checkpointNodeIds에 포함된 노드는 PATROL_CHECKPOINT("점검 수행"), 그 외는
+ * PATROL_WAYPOINT("패트롤 이동"). location은 토폴로지 노드 displayName(없으면
+ * slabName, 미등록 노드는 id 폴백)으로 채워 4필드 필수 채움 규칙을 유지한다.
+ */
+function logPatrolRoute(draft: ExecutionRun, mission: RuntimeMission): void {
+  const patrol = mission.patrol!;
+  for (const routeNodeId of patrol.routeNodeIds) {
+    const topoNode = findTopologyNode(patrol.topologySetId, routeNodeId);
+    const displayName = topoNode?.displayName ?? routeNodeId;
+    const isCheckpoint = patrol.checkpointNodeIds.includes(routeNodeId);
+    pushLog(draft, {
+      kind: isCheckpoint ? "PATROL_CHECKPOINT" : "PATROL_WAYPOINT",
+      nodeId: mission.nodeId,
+      missionId: mission.missionId,
+      message: isCheckpoint ? `점검 수행 — ${displayName}` : `패트롤 이동 — ${displayName}`,
+      location: topoNode ? topoNode.displayName || topoNode.slabName : routeNodeId,
+      missionSummary: mission.title,
+    });
+  }
 }
 
 /** 상황전파 확인 전이 — SENT → ACKED. 그 외 상태는 no-op(동일 참조 반환). */

@@ -11,6 +11,7 @@ import type {
   RuntimeNotification,
   SOPGraph,
 } from "../domain";
+import { findPath, findTopologyNode, getTopologySet } from "../domain/topology";
 import type {
   BoardRecordMock,
   MockResponse,
@@ -71,15 +72,47 @@ function findConnectedRoleLabel(graph: SOPGraph, taskNode: GraphNode): string | 
 /* ------------------------------------------------------------------ */
 
 /**
+ * taskKind "patrol" sop_task 노드의 토폴로지 참조를 해석해 패트롤 경로 정보를 계산한다.
+ * 셋/시작/종료 미지정, 셋 미등록, 경로 미도달이면 undefined — 임무 생성 자체는 막지 않는
+ * 무해 통과(참조 오류 차단은 validateGraph의 패트롤 검증 규칙이 담당한다).
+ */
+function resolvePatrol(node: GraphNode): RuntimeMission["patrol"] {
+  if (node.properties.taskKind !== "patrol") return undefined;
+  const topologySetId = nonBlank(node.properties.topologySetId);
+  const startNodeId = nonBlank(node.properties.startNodeId);
+  const endNodeId = nonBlank(node.properties.endNodeId);
+  if (!topologySetId || !startNodeId || !endNodeId) return undefined;
+
+  const set = getTopologySet(topologySetId);
+  if (!set) return undefined;
+  const path = findPath(set, startNodeId, endNodeId);
+  if (!path) return undefined;
+
+  // 점검 포인트는 경로에 실제 포함된 노드만 담는다 — 경로 밖 지정은 검증 경고 대상.
+  const checkpointIds = Array.isArray(node.properties.checkpointNodeIds)
+    ? node.properties.checkpointNodeIds.filter(
+        (id): id is string => typeof id === "string" && path.nodeIds.includes(id),
+      )
+    : [];
+  return {
+    topologySetId,
+    routeNodeIds: path.nodeIds,
+    checkpointNodeIds: checkpointIds,
+    distanceM: path.distanceM,
+  };
+}
+
+/**
  * 경로상 sop_task 노드(그룹 자식 + 독립 태스크 — 둘 다 visited에 포함됨)마다
  * RuntimeMission을 생성한다. 담당 역할은 assigneeRole 속성, 없으면 연결된 role 노드 label.
+ * taskKind "patrol" 노드는 토폴로지 경로를 해석해 mission.patrol을 채운다(미해석 시 생략).
  */
 export function buildMissions(graph: SOPGraph, visited: string[]): RuntimeMission[] {
   const missions: RuntimeMission[] = [];
   for (const node of visitedNodes(graph, visited)) {
     if (node.type !== "sop_task") continue;
     const dueMinutes = Number(node.properties.dueMinutes);
-    missions.push({
+    const mission: RuntimeMission = {
       missionId: `MISSION-${zeroPad(missions.length + 1)}`,
       nodeId: node.id,
       title: nonBlank(node.properties.title) ?? node.label,
@@ -87,7 +120,10 @@ export function buildMissions(graph: SOPGraph, visited: string[]): RuntimeMissio
         nonBlank(node.properties.assigneeRole) ?? findConnectedRoleLabel(graph, node),
       status: "SENT",
       dueMinutes: Number.isFinite(dueMinutes) && dueMinutes > 0 ? dueMinutes : undefined,
-    });
+    };
+    const patrol = resolvePatrol(node);
+    if (patrol) mission.patrol = patrol;
+    missions.push(mission);
   }
   return missions;
 }
@@ -221,7 +257,8 @@ export function buildBoardRecords(
 
 /**
  * 시뮬레이션 타임라인을 생성한다 — offsetMinutes 누적 규칙:
- * event/scope/asset/condition(0분) → 임무 전송(+1분) → 상황전파(+2분)
+ * event/scope/asset/condition(0분) → 임무 전송(+1분, 패트롤 임무는 경로 노드당 +1분 누적)
+ * → 상황전파(+2분)
  * → 응답(responded: +3분·지연 +8분 / timeout: +timeoutMinutes)
  * → escalation(+timeoutMinutes+1분) → 상황판/기록(마지막, 이전 최대 offset).
  */
@@ -270,9 +307,22 @@ export function buildTimeline(
     }
   }
 
-  // +1분 — 임무 전송.
+  // +1분 — 임무 전송. 패트롤 임무는 전송 엔트리 뒤에 경로 노드별 이동/점검 엔트리를 잇는다
+  // (offsetMinutes는 임무 전송 후 노드당 +1분 누적 근사).
   for (const mission of missions) {
     push(1, mission.nodeId, "mission", `임무 전송 — ${mission.title} (${mission.assigneeRole ?? "담당 미지정"})`);
+    if (!mission.patrol) continue;
+    const { topologySetId, routeNodeIds, checkpointNodeIds } = mission.patrol;
+    routeNodeIds.forEach((routeNodeId, index) => {
+      const displayName = findTopologyNode(topologySetId, routeNodeId)?.displayName ?? routeNodeId;
+      const isCheckpoint = checkpointNodeIds.includes(routeNodeId);
+      push(
+        1 + (index + 1),
+        mission.nodeId,
+        "patrol",
+        isCheckpoint ? `점검 수행 — ${displayName}` : `패트롤 이동 — ${displayName}`,
+      );
+    });
   }
 
   // +2분 — 상황전파 발송.
