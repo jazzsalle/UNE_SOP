@@ -6,3 +6,4 @@ export type * from "./types";
 export * from "./templates";
 export * from "./factory";
 export * from "./seeds";
+export * from "./spatial";

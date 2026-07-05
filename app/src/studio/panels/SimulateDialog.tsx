@@ -4,7 +4,12 @@
  * 실행 시 useStudio().runSimulate(ctx, { branchOutcome }) 호출 후 닫힌다 (결과 표시는 RuntimePreviewPanel).
  */
 import { useEffect, useState } from "react";
-import { ALL_SAMPLE_EVENTS } from "../../domain";
+import {
+  ALL_SAMPLE_EVENTS,
+  getSite,
+  getSpaces,
+  getSpatialSites,
+} from "../../domain";
 import type { EventContext, Severity } from "../../domain";
 import type { SimulateOptions } from "../../engine";
 import { useStudio } from "../state/GraphStudioContext";
@@ -46,8 +51,8 @@ function SimulateDialogBody() {
   const [source, setSource] = useState<EventContext["source"]>("simulation");
   const [spaceId, setSpaceId] = useState("");
   const [assetId, setAssetId] = useState("");
-  // 폼에 노출하지 않지만 샘플에서 승계하는 필드 (없으면 실행 시 기본값 생성).
   const [siteId, setSiteId] = useState("");
+  // 폼에 노출하지 않지만 샘플에서 승계하는 필드 (없으면 실행 시 기본값 생성).
   const [occurredAt, setOccurredAt] = useState("");
   const [measuredText, setMeasuredText] = useState("");
   const [jsonError, setJsonError] = useState<string | null>(null);
@@ -55,6 +60,37 @@ function SimulateDialogBody() {
     useState<SimulateOptions["branchOutcome"]>("responded");
 
   const close = () => setSimulateDialogOpen(false);
+
+  // ── 공간 레지스트리 기반 siteId/spaceId 선택 목록 (Phase 6) ──
+  const spatialSites = getSpatialSites();
+  const siteRegistered = siteId !== "" && getSite(siteId) !== null;
+  // 사이트 미선택 시 전체 사이트의 공간을 "사이트명 · 공간명"으로 노출한다.
+  const spaceOptions = siteRegistered
+    ? getSpaces(siteId).map((space) => ({
+        value: space.primaryKey,
+        label: space.name,
+      }))
+    : spatialSites.flatMap((site) =>
+        getSpaces(site.ufid).map((space) => ({
+          value: space.primaryKey,
+          label: `${site.name} · ${space.name}`,
+        })),
+      );
+  const spaceUnlisted =
+    spaceId !== "" &&
+    !spaceOptions.some((option) => option.value === spaceId);
+
+  /** 사이트 변경 — 새 사이트 공간 목록에 없는 spaceId는 초기화한다. */
+  const handleSiteSelect = (next: string) => {
+    setSiteId(next);
+    if (
+      next !== "" &&
+      getSite(next) !== null &&
+      !getSpaces(next).some((space) => space.primaryKey === spaceId)
+    ) {
+      setSpaceId("");
+    }
+  };
 
   // Esc 키로 닫기.
   useEffect(() => {
@@ -236,16 +272,47 @@ function SimulateDialogBody() {
             </div>
             <div className="sim-dialog__field">
               <label className="sim-dialog__label typo-text-sm font-bold">
-                spaceId
+                siteId
               </label>
-              <input
-                type="text"
-                className="sim-dialog__input typo-text-md"
-                value={spaceId}
-                onChange={(event) => setSpaceId(event.target.value)}
-                placeholder="SPACE-STORAGE-ZONE"
-              />
+              <select
+                className="sim-dialog__select typo-text-md"
+                value={siteId}
+                onChange={(event) => handleSiteSelect(event.target.value)}
+              >
+                <option value="">사이트 없음 (빈 값)</option>
+                {spatialSites.map((site) => (
+                  <option key={site.ufid} value={site.ufid}>
+                    {site.name} ({site.ufid})
+                  </option>
+                ))}
+                {/* 레지스트리 밖 기존 값(샘플 승계 등) 보존용 옵션 */}
+                {siteId !== "" && !siteRegistered && (
+                  <option value={siteId}>{siteId} (미등록)</option>
+                )}
+              </select>
             </div>
+          </div>
+
+          <div className="sim-dialog__field">
+            <label className="sim-dialog__label typo-text-sm font-bold">
+              spaceId
+            </label>
+            <select
+              className="sim-dialog__select typo-text-md"
+              value={spaceId}
+              onChange={(event) => setSpaceId(event.target.value)}
+            >
+              <option value="">공간 없음 (빈 값)</option>
+              {spaceOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+              {/* 레지스트리 밖 기존 값(샘플 승계 등) 보존용 옵션 */}
+              {spaceUnlisted && (
+                <option value={spaceId}>{spaceId} (미등록)</option>
+              )}
+            </select>
           </div>
 
           <div className="sim-dialog__field">
@@ -257,7 +324,7 @@ function SimulateDialogBody() {
               className="sim-dialog__input typo-text-md"
               value={assetId}
               onChange={(event) => setAssetId(event.target.value)}
-              placeholder="ASSET-H2-SENSOR-001"
+              placeholder="M_B00200000001AULH2F01F01_SFFC_9900001"
             />
           </div>
 

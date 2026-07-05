@@ -22,7 +22,7 @@ const SAFETY_KOREA_DRILL_GRAPH: SOPGraph = {
     }),
     seedNode("tpl-scope-evacuation-area", "seed-drill-area", { x: 280, y: 200 }, {
       label: "운동장",
-      properties: { siteId: "SITE-SCHOOL", spaceIds: ["SPACE-PLAYGROUND"], capacity: 800 },
+      properties: { siteId: "B00400000001AUSCH", spaceIds: ["L_B00400000001AUSCH_F01F01_CV_RM_00001"], capacity: 800 },
     }),
     seedNode("tpl-logic-condition", "seed-drill-cond", { x: 560, y: 200 }, {
       label: "훈련상황 확인",
@@ -118,8 +118,8 @@ export const SAFETY_KOREA_DRILL_SEED: DomainTemplateSeed = {
       eventType: "EARTHQUAKE_DRILL",
       severity: "CAUTION",
       occurredAt: "2026-07-05T14:00:00.000Z",
-      siteId: "SITE-SCHOOL",
-      spaceId: "SPACE-PLAYGROUND",
+      siteId: "B00400000001AUSCH",
+      spaceId: "L_B00400000001AUSCH_F01F01_CV_RM_00001",
       source: "simulation",
     },
   ],

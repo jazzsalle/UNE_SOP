@@ -4,11 +4,14 @@
  * 변경을 GraphStudioContext 액션으로 즉시 노드 상태에 반영한다.
  * 포트 목록은 읽기전용으로 나열한다.
  */
+import { Fragment, type ReactNode } from "react";
 import { NODE_TEMPLATES } from "../../domain";
-import type { NodeType } from "../../domain";
+import type { GraphNode, NodeType } from "../../domain";
 import { useStudio } from "../state/GraphStudioContext";
+import AssetPickerField from "./inspector/AssetPickerField";
 import PortListSection from "./inspector/PortListSection";
 import PropertyField, { fieldInputStyle } from "./inspector/PropertyField";
+import SpaceScopeFields from "./inspector/SpaceScopeFields";
 
 /**
  * 입력 focus/placeholder 상태 스타일 — inline style로 표현할 수 없는
@@ -28,6 +31,67 @@ const inspectorInputCss = `
 function accentTokenForType(nodeType: NodeType): string {
   const template = NODE_TEMPLATES.find((t) => t.nodeType === nodeType);
   return template?.accentColorToken ?? "--color-bg-neutral";
+}
+
+/** unknown 값을 string[]으로 좁힌다 — 문자열 원소만 남긴다(공간/자산 id 배열용). */
+function asStringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+}
+
+/**
+ * space_scope/asset_filter 노드의 공간 참조 키를 전용 피커로 라우팅한다.
+ * - space_scope: siteId(string) 위치에서 SpaceScopeFields가 siteId+spaceIds를 함께 렌더,
+ *   spaceIds 키는 중복 렌더를 피해 건너뛴다.
+ * - asset_filter: assetIds(string[])를 AssetPickerField로.
+ * 값 타입이 템플릿 기대와 다르면 기존 PropertyField로 폴백한다(파괴적 변경 금지).
+ * 전용 피커에 해당하지 않으면 null을 반환한다.
+ */
+function renderSpatialField(
+  graphNode: GraphNode,
+  nodeId: string,
+  key: string,
+  value: unknown,
+  updateNodeProperty: (nodeId: string, key: string, value: unknown) => void,
+): ReactNode | null {
+  if (graphNode.type === "space_scope") {
+    if (key === "siteId" && typeof value === "string") {
+      return (
+        <SpaceScopeFields
+          key={key}
+          siteId={value}
+          spaceIds={asStringArray(graphNode.properties["spaceIds"])}
+          onSiteIdChange={(next) => updateNodeProperty(nodeId, "siteId", next)}
+          onSpaceIdsChange={(next) =>
+            updateNodeProperty(nodeId, "spaceIds", next)
+          }
+        />
+      );
+    }
+    if (
+      key === "spaceIds" &&
+      typeof graphNode.properties["siteId"] === "string" &&
+      Array.isArray(value)
+    ) {
+      // SpaceScopeFields(siteId 위치)에서 함께 렌더됨 — 여기서는 생략.
+      return <Fragment key={key} />;
+    }
+  }
+  if (
+    graphNode.type === "asset_filter" &&
+    key === "assetIds" &&
+    Array.isArray(value)
+  ) {
+    return (
+      <AssetPickerField
+        key={key}
+        assetIds={asStringArray(value)}
+        onChange={(next) => updateNodeProperty(nodeId, "assetIds", next)}
+      />
+    );
+  }
+  return null;
 }
 
 /** 섹션 소제목 — 팔레트 그룹 헤더와 동일 관례(uppercase + subtle). */
@@ -149,16 +213,25 @@ function NodeDetailForm() {
           </p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {propertyEntries.map(([key, value]) => (
-              <PropertyField
-                key={key}
-                propKey={key}
-                value={value}
-                onChange={(next) =>
-                  updateNodeProperty(selectedNode.id, key, next)
-                }
-              />
-            ))}
+            {propertyEntries.map(
+              ([key, value]) =>
+                renderSpatialField(
+                  graphNode,
+                  selectedNode.id,
+                  key,
+                  value,
+                  updateNodeProperty,
+                ) ?? (
+                  <PropertyField
+                    key={key}
+                    propKey={key}
+                    value={value}
+                    onChange={(next) =>
+                      updateNodeProperty(selectedNode.id, key, next)
+                    }
+                  />
+                ),
+            )}
           </div>
         )}
       </section>

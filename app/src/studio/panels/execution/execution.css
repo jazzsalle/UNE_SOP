@@ -236,6 +236,11 @@
   overflow-wrap: anywhere;
 }
 
+/* 장소 열 — 표준 공간 기본키(38자, 공백 없음)가 열 폭을 밀어내지 않게 줄바꿈 허용. */
+.exec-log__location {
+  overflow-wrap: anywhere;
+}
+
 .exec-log__time {
   white-space: nowrap;
 }

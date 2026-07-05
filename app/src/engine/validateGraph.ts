@@ -9,6 +9,7 @@
  *   5. 도달 불가 경로   → 규칙 5 (checkReachability, warning)
  *   6. 순환 참조        → 규칙 6 (checkCycles, error)
  * 추가 규칙 7. 미응답 분기(branch timeout_out 미연결) → warning.
+ * 추가 규칙 8. 공간 스키마 참조(space_scope siteId/spaceIds, asset_filter assetIds) → warning/info.
  */
 import type {
   GraphNode,
@@ -17,6 +18,7 @@ import type {
   ValidationIssue,
   ValidationResult,
 } from "../domain";
+import { findFacility, findSpace, getSite } from "../domain";
 import { findCycles, reachableFrom } from "./traversal";
 
 /** 빈 문자열/빈 배열/undefined/null은 "미입력"으로 취급한다. */
@@ -337,8 +339,82 @@ function checkBranchTimeoutPath(graph: SOPGraph, issues: ValidationIssue[]): voi
 }
 
 /* ------------------------------------------------------------------ */
+/* 규칙 8 — 공간 스키마 참조 (warning/info, 추가 규칙)                    */
+/* ------------------------------------------------------------------ */
 
-/** SOPGraph 전체를 7개 규칙으로 검증한다. error 이슈가 하나도 없으면 valid=true. */
+/** properties의 문자열 배열 속성을 안전하게 읽는다(비배열/비문자열 원소는 무시). */
+function readStringArray(props: Record<string, unknown>, key: string): string[] {
+  const value = props[key];
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string");
+}
+
+/**
+ * space_scope/asset_filter 노드가 참조하는 공간 id를 공간 스키마 레지스트리로 해석한다.
+ * (a) space_scope.siteId가 입력됐는데 getSite()에 없으면 warning.
+ * (b) space_scope.spaceIds 각 원소가 findSpace()에 없으면 warning.
+ * (c) spaceId는 존재하나 소속 ufid가 노드의 siteId와 불일치하면 warning.
+ * (d) asset_filter.assetIds 중 `M_` 접두(표준 3차원객체코드 규약) id가 findFacility()에
+ *     없으면 info. M_ 접두가 아닌 자유 id는 검사하지 않는다 — 레거시(Phase 4 시드) 허용.
+ *
+ * 레벨을 error가 아닌 warning/info로 두는 근거: 본 도구는 범용 재난안전 SOP 저작 도구로,
+ * 공간 스키마에 아직 등록되지 않은 현장(자유 서술 siteId/spaceId)도 저작 대상이며
+ * Phase 4 시드/localStorage 구버전 그래프(SITE-* 등)와의 호환을 유지해야 한다.
+ */
+function checkSpatialReferences(graph: SOPGraph, issues: ValidationIssue[]): void {
+  for (const node of graph.nodes) {
+    if (node.type === "space_scope") {
+      const siteId = node.properties.siteId;
+      const hasSiteId = typeof siteId === "string" && siteId.trim() !== "";
+
+      // (a) 미등록 siteId — 미입력은 규칙 2(필수 속성)에서 이미 warning 처리한다.
+      if (hasSiteId && getSite(siteId) === null) {
+        issues.push({
+          level: "warning",
+          nodeId: node.id,
+          message: `"${node.label}" — 공간 스키마에 등록되지 않은 siteId입니다: ${siteId}`,
+        });
+      }
+
+      for (const spaceId of readStringArray(node.properties, "spaceIds")) {
+        const space = findSpace(spaceId);
+        if (space === null) {
+          // (b) 미등록 spaceId
+          issues.push({
+            level: "warning",
+            nodeId: node.id,
+            message: `"${node.label}" — 공간 스키마에 등록되지 않은 spaceId입니다: ${spaceId}`,
+          });
+        } else if (hasSiteId && space.ufid !== siteId) {
+          // (c) 사이트 소속 불일치
+          issues.push({
+            level: "warning",
+            nodeId: node.id,
+            message: `"${node.label}" — spaceId ${spaceId}는 siteId ${siteId} 소속이 아닙니다.`,
+          });
+        }
+      }
+    }
+
+    if (node.type === "asset_filter") {
+      for (const assetId of readStringArray(node.properties, "assetIds")) {
+        // (d) M_ 접두 id만 표준 3차원객체코드로 간주해 검사한다(자유 id는 레거시 허용).
+        if (!assetId.startsWith("M_")) continue;
+        if (findFacility(assetId) === null) {
+          issues.push({
+            level: "info",
+            nodeId: node.id,
+            message: `"${node.label}" — 공간 스키마에 등록되지 않은 시설물 id입니다: ${assetId}`,
+          });
+        }
+      }
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ */
+
+/** SOPGraph 전체를 8개 규칙으로 검증한다. error 이슈가 하나도 없으면 valid=true. */
 export function validateGraph(graph: SOPGraph): ValidationResult {
   const issues: ValidationIssue[] = [];
   checkRequiredInputPorts(graph, issues); // 1. 필수 입력 포트
@@ -348,6 +424,7 @@ export function validateGraph(graph: SOPGraph): ValidationResult {
   checkReachability(graph, issues); // 5. 도달 불가 경로
   checkCycles(graph, issues); // 6. 순환 참조
   checkBranchTimeoutPath(graph, issues); // 7. 미응답 분기(추가 규칙)
+  checkSpatialReferences(graph, issues); // 8. 공간 스키마 참조(추가 규칙)
 
   return {
     valid: !issues.some((issue) => issue.level === "error"),

@@ -1,0 +1,364 @@
+/*
+ * 공간 모델 검증 뷰 스타일 — Phase 6 Task T7 소유.
+ * 색상은 전부 디자인 시스템 CSS 변수 토큰 사용. hex/rgb 하드코딩 금지.
+ * SVG 채움/스트로크 색도 동일하게 var() 토큰만 쓴다.
+ */
+
+/* ── division별 색 매핑 커스텀 프로퍼티 ─────────────────────────
+ * 공간 폴리곤 채움(--spatial-division-fill)과 시설물 마커(--spatial-division-marker)를
+ * 한 곳에서 정의해 평면 SVG와 범례 스와치가 같은 매핑을 공유한다.
+ * semantic subtle 토큰은 종류가 한정되어 일부 division이 색을 공유하지만
+ * (SL/TP, CV/HS, IF/MD), 검증용 건물의 층별 division 조합에서는 서로 겹치지 않고
+ * 폴리곤 라벨·범례로 항상 구분된다. */
+.spatial-division--mv {
+  /* 이동 — brand */
+  --spatial-division-fill: var(--color-bg-brand-subtle);
+  --spatial-division-marker: var(--color-bg-brand);
+}
+
+.spatial-division--if {
+  /* 안내 — info */
+  --spatial-division-fill: var(--color-bg-info-subtle);
+  --spatial-division-marker: var(--color-bg-info);
+}
+
+.spatial-division--cv {
+  /* 편의 — success 계열 subtle */
+  --spatial-division-fill: var(--color-bg-success-subtle);
+  --spatial-division-marker: var(--color-bg-neutral);
+}
+
+.spatial-division--tp {
+  /* 운수 — brand subtle pressed */
+  --spatial-division-fill: var(--color-bg-brand-subtle-pressed);
+  --spatial-division-marker: var(--color-bg-neutral);
+}
+
+.spatial-division--sf {
+  /* 안전 — warning */
+  --spatial-division-fill: var(--color-bg-warning-subtle);
+  --spatial-division-marker: var(--color-bg-warning);
+}
+
+.spatial-division--ff {
+  /* 소방 — danger */
+  --spatial-division-fill: var(--color-bg-danger-subtle);
+  --spatial-division-marker: var(--color-bg-danger);
+}
+
+.spatial-division--sl {
+  /* 판매 — brand subtle pressed */
+  --spatial-division-fill: var(--color-bg-brand-subtle-pressed);
+  --spatial-division-marker: var(--color-bg-neutral);
+}
+
+.spatial-division--md {
+  /* 의료 — info subtle + success 마커 */
+  --spatial-division-fill: var(--color-bg-info-subtle);
+  --spatial-division-marker: var(--color-bg-success);
+}
+
+.spatial-division--hs {
+  /* 주거 — success 계열 subtle */
+  --spatial-division-fill: var(--color-bg-success-subtle);
+  --spatial-division-marker: var(--color-bg-neutral);
+}
+
+.spatial-division--bs {
+  /* 업무 — neutral 계열(muted) */
+  --spatial-division-fill: var(--color-bg-muted);
+  --spatial-division-marker: var(--color-bg-neutral);
+}
+
+.spatial-division--mn {
+  /* 관리 — neutral 계열(subtle) */
+  --spatial-division-fill: var(--color-bg-subtle);
+  --spatial-division-marker: var(--color-bg-neutral);
+}
+
+.spatial-division--is {
+  /* 구조 — neutral 계열(disabled) */
+  --spatial-division-fill: var(--color-bg-disabled);
+  --spatial-division-marker: var(--color-bg-neutral);
+}
+
+/* ── SpatialModelPage 골격 ──────────────────────────────────── */
+
+.spatial-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  background: var(--color-bg-muted);
+}
+
+.spatial-page__header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-shrink: 0;
+  padding: 14px 20px;
+  background: var(--color-bg-surface);
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.spatial-page__title {
+  margin: 0;
+  color: var(--color-text-default);
+  white-space: nowrap;
+}
+
+.spatial-page__subtitle {
+  margin: 0;
+  color: var(--color-text-subtle);
+}
+
+/* 사이트 셀렉트 + 층 탭 툴바 */
+.spatial-page__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+  padding: 8px 20px 0;
+  background: var(--color-bg-surface);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.spatial-page__site-label {
+  color: var(--color-text-subtle);
+  white-space: nowrap;
+}
+
+.spatial-page__site-select {
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-surface);
+  color: var(--color-text-default);
+}
+
+.spatial-page__site-select:focus {
+  outline: none;
+  border-color: var(--color-border-focus);
+}
+
+.spatial-page__floor-tabs {
+  display: flex;
+  align-self: stretch;
+}
+
+/* 층 탭 — 글로벌 내비 탭과 동일한 borderBottom 활성 표시 패턴 */
+.spatial-page__floor-tab {
+  padding: 6px 14px 8px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--color-text-subtle);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.spatial-page__floor-tab--active {
+  color: var(--color-text-brand);
+  border-bottom-color: var(--color-border-brand);
+}
+
+/* 좌측 평면(1fr) / 우측 상세(380px) 2컬럼 */
+.spatial-page__body {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  flex: 1;
+  min-height: 0;
+}
+
+.spatial-page__plan-area {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px 20px;
+}
+
+.spatial-page__plan-note {
+  margin: 0;
+  color: var(--color-text-placeholder);
+}
+
+.spatial-page__plan-empty {
+  margin: 0;
+  padding: 12px;
+  border: 1px dashed var(--color-border-subtle);
+  border-radius: var(--radius-control);
+  color: var(--color-text-placeholder);
+}
+
+/* ── division 범례 ──────────────────────────────────────────── */
+
+.spatial-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.spatial-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-subtle);
+}
+
+.spatial-legend__swatch {
+  width: 14px;
+  height: 14px;
+  background: var(--spatial-division-fill, var(--color-bg-subtle));
+  border: 1px solid var(--color-border-default);
+  border-radius: 3px;
+}
+
+/* ── FloorPlanSvg ───────────────────────────────────────────── */
+
+.floor-plan {
+  width: 100%;
+  max-height: 100%;
+  flex: 1;
+  min-height: 0;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-control);
+}
+
+/* 공간 폴리곤 — division별 채움 + 기본 스트로크. 단위는 viewBox 사용자 좌표(m). */
+.floor-plan__space {
+  fill: var(--spatial-division-fill, var(--color-bg-subtle));
+  stroke: var(--color-border-default);
+  stroke-width: 0.12;
+  cursor: pointer;
+}
+
+.floor-plan__space:hover {
+  stroke: var(--color-border-focus);
+  stroke-width: 0.2;
+}
+
+.floor-plan__space--selected {
+  stroke: var(--color-border-focus);
+  stroke-width: 0.3;
+}
+
+/* 공간 라벨 — 클릭은 폴리곤이 받도록 pointer-events 차단 */
+.floor-plan__space-label {
+  fill: var(--color-text-subtle);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* 시설물 점 마커 — division별 마커색 원 + surface 외곽선 */
+.floor-plan__facility {
+  fill: var(--spatial-division-marker, var(--color-bg-neutral));
+  stroke: var(--color-bg-surface);
+  stroke-width: 0.12;
+  cursor: pointer;
+}
+
+.floor-plan__facility:hover {
+  stroke: var(--color-border-focus);
+  stroke-width: 0.2;
+}
+
+.floor-plan__facility--selected {
+  stroke: var(--color-border-focus);
+  stroke-width: 0.3;
+}
+
+/* ── SpaceDetailPanel ───────────────────────────────────────── */
+
+.space-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px;
+  background: var(--color-bg-surface);
+  border-left: 1px solid var(--color-border-subtle);
+}
+
+.space-detail__placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 12px;
+  text-align: center;
+  color: var(--color-text-placeholder);
+}
+
+.space-detail__name {
+  margin: 0;
+  color: var(--color-text-default);
+  overflow-wrap: anywhere;
+}
+
+.space-detail__kind {
+  margin: 0;
+  color: var(--color-text-subtle);
+}
+
+.space-detail__section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-control);
+}
+
+.space-detail__section-title {
+  margin: 0;
+  color: var(--color-text-default);
+}
+
+/* 표준 코드 원문 — 등폭 표시 + 줄바꿈 허용 */
+.space-detail__code {
+  margin: 0;
+  padding: 6px 8px;
+  font-family: var(--font-family-mono, monospace);
+  background: var(--color-bg-muted);
+  border-radius: var(--radius-control);
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+/* key/value 2열 그리드 — dt는 라벨, dd는 값 (dashboard run-detail__kv 패턴) */
+.space-detail__kv {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 0;
+}
+
+.space-detail__kv dt {
+  color: var(--color-text-subtle);
+  white-space: nowrap;
+}
+
+.space-detail__kv dd {
+  margin: 0;
+  color: var(--color-text-default);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* 코드값 뒤 한글 라벨 보조 표기 */
+.space-detail__label-hint {
+  margin-left: 6px;
+  color: var(--color-text-placeholder);
+}

@@ -21,11 +21,11 @@ const GENERAL_WORKPLACE_GRAPH: SOPGraph = {
     }),
     seedNode("tpl-scope-zone", "seed-gw-zone", { x: 280, y: 200 }, {
       label: "작업구역",
-      properties: { siteId: "SITE-WORKPLACE", spaceIds: ["SPACE-WORK-ZONE-A"] },
+      properties: { siteId: "B00500000001AUWRK", spaceIds: ["L_B00500000001AUWRK_F01F01_BS_RM_00001"] },
     }),
     seedNode("tpl-object-cctv", "seed-gw-cctv", { x: 560, y: 200 }, {
       label: "현장 CCTV",
-      properties: { assetIds: ["ASSET-CCTV-07"], streamUrl: "mock://cctv-07" },
+      properties: { assetIds: ["M_B00500000001AUWRKF01F01_SFFC_0200001"], streamUrl: "mock://cctv-07" },
     }),
     seedNode("tpl-logic-condition", "seed-gw-cond", { x: 840, y: 200 }, {
       label: "위험도 WARNING 이상",
@@ -107,9 +107,9 @@ export const GENERAL_WORKPLACE_SEED: DomainTemplateSeed = {
       eventType: "WORKER_DOWN",
       severity: "DANGER",
       occurredAt: "2026-07-05T11:00:00.000Z",
-      siteId: "SITE-WORKPLACE",
-      spaceId: "SPACE-WORK-ZONE-A",
-      assetId: "ASSET-CCTV-07",
+      siteId: "B00500000001AUWRK",
+      spaceId: "L_B00500000001AUWRK_F01F01_BS_RM_00001",
+      assetId: "M_B00500000001AUWRKF01F01_SFFC_0200001",
       source: "simulation",
     },
   ],

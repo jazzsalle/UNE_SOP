@@ -81,7 +81,7 @@ function ExecutionLogView({ logs }: { logs: ExecutionLogEntry[] }) {
               <td className="exec-log__time">
                 {formatLoggedAt(entry.loggedAt)} (+{entry.elapsedMinutes}분)
               </td>
-              <td>{entry.location}</td>
+              <td className="exec-log__location">{entry.location}</td>
               <td>
                 <span
                   className={`exec-badge ${KIND_BADGE[entry.kind]} typo-text-sm font-bold`}

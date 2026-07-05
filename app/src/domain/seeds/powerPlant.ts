@@ -21,11 +21,11 @@ const POWER_PLANT_GRAPH: SOPGraph = {
     }),
     seedNode("tpl-scope-facility", "seed-pp-facility", { x: 280, y: 200 }, {
       label: "터빈실",
-      properties: { siteId: "SITE-POWER-PLANT", spaceIds: ["SPACE-TURBINE-HALL"] },
+      properties: { siteId: "B00300000001AUPWR", spaceIds: ["L_B00300000001AUPWR_F01F01_BS_RM_00001"] },
     }),
     seedNode("tpl-object-equipment", "seed-pp-equipment", { x: 560, y: 200 }, {
       label: "터빈",
-      properties: { assetIds: ["ASSET-TURBINE-01"] },
+      properties: { assetIds: ["M_B00300000001AUPWRF01F01_MNFC_9900001"] },
     }),
     seedNode("tpl-logic-condition", "seed-pp-cond", { x: 840, y: 200 }, {
       label: "진동 임계치 초과",
@@ -107,9 +107,9 @@ export const POWER_PLANT_SEED: DomainTemplateSeed = {
       eventType: "TURBINE_VIBRATION",
       severity: "DANGER",
       occurredAt: "2026-07-05T10:00:00.000Z",
-      siteId: "SITE-POWER-PLANT",
-      spaceId: "SPACE-TURBINE-HALL",
-      assetId: "ASSET-TURBINE-01",
+      siteId: "B00300000001AUPWR",
+      spaceId: "L_B00300000001AUPWR_F01F01_BS_RM_00001",
+      assetId: "M_B00300000001AUPWRF01F01_MNFC_9900001",
       source: "simulation",
       measuredValues: { vibration_mm_s: 9.4 },
     },
