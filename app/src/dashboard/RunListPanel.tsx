@@ -52,7 +52,11 @@ function RunListPanel({ selectedRunId, onSelect }: RunListPanelProps) {
   }, []);
 
   return (
-    <aside className="run-list" aria-label="실행이력 목록">
+    <aside
+      className="run-list"
+      aria-label="실행이력 목록"
+      data-tutorial-id="dashboard-run-list"
+    >
       <h3 className="run-list__title typo-text-md font-bold">
         실행 Run 목록
         <span className="run-list__count typo-text-sm">{runs.length}건</span>

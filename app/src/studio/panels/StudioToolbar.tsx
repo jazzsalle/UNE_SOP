@@ -163,6 +163,7 @@ function StudioToolbar() {
 
         <button
           type="button"
+          data-tutorial-id="studio-toolbar-validate"
           onClick={() => runValidate()}
           className="typo-text-md font-bold"
           style={outlineButton}
@@ -171,6 +172,7 @@ function StudioToolbar() {
         </button>
         <button
           type="button"
+          data-tutorial-id="studio-toolbar-compile"
           onClick={() => runCompile()}
           className="typo-text-md font-bold"
           style={primaryButton}

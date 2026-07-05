@@ -1,0 +1,185 @@
+/*
+ * 튜토리얼 오버레이 스타일 — Phase 9 T6 소유.
+ * 색상은 전부 디자인 시스템 CSS 변수 토큰 사용. hex/rgb 하드코딩 금지.
+ * (반투명 dim은 --color-bg-overlay 토큰을 color-mix로 투명화해 만든다.)
+ */
+
+/* ── 오버레이 루트 ─────────────────────────────────────────────
+ * pointer-events 전략(택1): 루트를 pointer-events:none으로 두어
+ * 하이라이트된 대상 요소를 포함해 화면 전체가 실제 조작 가능하게 하고,
+ * 말풍선(버튼 포함)만 pointer-events:auto로 되살린다.
+ * 배경을 눌러도 튜토리얼은 닫히지 않는다(닫기는 X/Esc만). */
+.tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  pointer-events: none;
+}
+
+/* 대상이 없을 때(중앙 안내 폴백) 전체 dim 패널 */
+.tutorial-dim {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--color-bg-overlay) 55%, transparent);
+}
+
+/* ── 하이라이트 링 — 대상 rect 위에 얹고, 거대한 box-shadow로
+ * 링 바깥 영역만 어둡게 만든다(하이라이트 영역은 밝게 유지). */
+.tutorial-highlight {
+  position: absolute;
+  border: 2px solid var(--color-border-focus);
+  border-radius: 8px;
+  box-shadow: 0 0 0 9999px
+    color-mix(in srgb, var(--color-bg-overlay) 55%, transparent);
+  transition:
+    top 0.25s ease,
+    left 0.25s ease,
+    width 0.25s ease,
+    height 0.25s ease;
+  pointer-events: none;
+}
+
+/* ── 마우스 커서 아이콘 — 하이라이트 우하단에 배치, 스텝 전환 시 부드럽게 이동 */
+.tutorial-cursor {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  color: var(--color-text-default);
+  transition:
+    top 0.35s ease,
+    left 0.35s ease;
+  pointer-events: none;
+}
+
+/* 커서 아이콘 외곽선은 SVG stroke(--color-bg-surface)로 대비를 확보한다. */
+.tutorial-cursor svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── 말풍선 ──────────────────────────────────────────────────── */
+.tutorial-tooltip {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 340px;
+  max-width: calc(100vw - 32px);
+  padding: 14px 16px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 10px;
+  box-shadow: var(--elevation-06);
+  transition:
+    top 0.25s ease,
+    left 0.25s ease,
+    bottom 0.25s ease;
+  pointer-events: auto;
+}
+
+/* 대상 미존재/환영·마무리 스텝 — 화면 중앙 안내 폴백 */
+.tutorial-tooltip--center {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.tutorial-tooltip__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 순번 뱃지 */
+.tutorial-tooltip__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--color-bg-brand);
+  color: var(--color-text-on-brand);
+}
+
+.tutorial-tooltip__title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  color: var(--color-text-default);
+}
+
+/* 닫기(X) 버튼 */
+.tutorial-tooltip__close {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--color-text-subtle);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.tutorial-tooltip__close:hover {
+  background: var(--color-bg-muted);
+}
+
+.tutorial-tooltip__body {
+  margin: 0;
+  color: var(--color-text-subtle);
+  word-break: keep-all;
+}
+
+/* 대상 요소 미표시 안내(폴백 힌트) */
+.tutorial-tooltip__hint {
+  margin: 0;
+  color: var(--color-text-warning);
+  word-break: keep-all;
+}
+
+.tutorial-tooltip__footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+/* 진행률 "n / 총" */
+.tutorial-tooltip__progress {
+  flex: 1;
+  color: var(--color-text-placeholder);
+}
+
+/* 이전/다음 버튼 */
+.tutorial-btn {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tutorial-btn:disabled {
+  cursor: not-allowed;
+  background: var(--color-bg-disabled);
+  border-color: var(--color-border-disabled);
+  color: var(--color-text-disabled);
+}
+
+.tutorial-btn--outline {
+  background: var(--color-bg-surface);
+  border-color: var(--color-border-default);
+  color: var(--color-text-default);
+}
+
+.tutorial-btn--primary {
+  background: var(--color-bg-brand);
+  color: var(--color-text-on-brand);
+}

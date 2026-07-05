@@ -139,6 +139,56 @@
 3. 개발 결과물은 튜토리얼이 없어 사용자가 불편할 것이다. 조작 순서를 도와줄 수 있는 튜토리얼을 만들어 마우스 커서 위치 등을 표기하여 단계별로 따라할 수 있게 한다.
 4. 전체 개발 단계로부터 필요한 seed data를 만들어, 시나리오를 만들고 실행해 볼 수 있는 시나리오 실행기를 개발한다. 토폴로지는 임의로 만들어 공간에 표현/연결한다. 
 5. 위 내용으로 인해 webgl 뷰어가 필요할 수 있으니 간단하게 구현한다.
+6. 위 내용을 Phase 9에서 claude가 직접 개발/조치했다.
+
+" 통합 시나리오 실행기 + 순수 WebGL 3D 뷰어 + 단계별 조작 튜토리얼을 추가하고, 공간→이벤트→SOP→토폴로지→
+  실행→회신→대시보드를 잇는 엔드투엔드 데모 통합 서비스를 완성했습니다.
+
+  조치 내역:
+
+  1. App 셸 확장 — ReactFlowProvider→GraphStudioProvider를 App 최상위로 승격해(모든 뷰 상시 마운트 패턴
+  유지) 시나리오 실행기/튜토리얼이 Studio API(loadDomainTemplate/runValidate/runCompile 등)를 공유하고,
+  activeView를 AppViewContext로 노출해 외부 뷰 전환을 허용했습니다. 내비 5번째 뷰 "시나리오"와 우측
+  "튜토리얼" 버튼을 추가하고, 튜토리얼 계약 data-tutorial-id를 내비/Studio 툴바/Execution 탭/대시보드
+  run 목록/현장 회신 임무 영역에 부여했습니다(기존 화면은 속성 부여만 — 로직 무변경).
+  2. 통합 seed data — 담당자 마스터(ContactPerson, 사이트 4종+검증 건물별 mock 담당자)와 공간·이벤트·SOP·
+  토폴로지·담당자를 묶는 ScenarioDefinition 계약을 신설하고, 통합 시나리오 2종("검증용 건물 야간 순찰 종합
+  데모"=로봇개 패트롤 시드+토폴로지 임의 생성, "LH2 누출 대응 데모"=액화수소 시드+임의 생성)을 정의했습니다.
+  참조 id(seedId/eventId/siteUfid/contactIds)는 모듈 로드 시 실존 검증됩니다.
+  3. 토폴로지 임의 생성기 — generateTopology()가 공간 footprint 무게중심 노드 배치(80㎡ 초과 공간은 그리드
+  보간 2~4개), 층 내 MV(이동) 백본 최근접 체인+방 노드 최근접 연결, 계단/엘리베이터 수직 연결, 1층 출입구
+  exit 지정, BFS 단일 연결 요소 보장을 시드된 mulberry32 PRNG로 결정적으로 수행합니다(동일 seed→동일 셋).
+  pickPatrolEndpoints()가 층간 최원거리 A* 가능 쌍과 경로 위 점검 포인트를 산출하고, 레지스트리에
+  registerGeneratedSet/subscribeTopologySets(동기 통지·source "generated" 영속 보존)를 추가했습니다.
+  4. 시나리오 실행기 뷰 — 시나리오 선택+개요/담당자 명단과 단계 카드 6장(① 토폴로지 생성→② SOP 로드
+  [패트롤 노드 경로를 생성 셋으로 자동 치환]→③ 검증·컴파일→④ 실행[createRun]→⑤ 자동 회신[REPORT_ACTION]→
+  ⑥ 대시보드 점검)을 순차 활성화 상태 머신으로 구동합니다. run은 subscribeRuns로 최신본을 반영해 Studio
+  Execution 탭/현장 회신 뷰와 동시 조작해도 회신을 덮어쓰지 않습니다(Phase 8 동시성 관례).
+  5. 순수 WebGL 3D 뷰어 — 신규 npm 의존성 0으로 mat4/orbit 카메라/메시 빌더(볼록 footprint fan triangulation
+  압출 프리즘·층 슬래브·시설물/토폴로지 마커·링크 GL_LINES)/램버트 셰이더 렌더러를 구현하고, 공간 모델 뷰에
+  "2D 평면 | 3D 뷰" 토글로 통합했습니다(orbit/zoom·층 표시/숨김·context lost 방어). 색상은 getComputedStyle로
+  디자인 토큰 CSS 변수를 런타임 파싱해 사용합니다(소스 내 색 리터럴 없음 — 파서만 명시 허용 예외).
+  6. 단계별 조작 튜토리얼 — data-tutorial-id 대상 rect를 추적해 하이라이트 링+SVG 마우스 커서 아이콘+말풍선
+  (순번/제목/설명/이전·다음·닫기)을 겹쳐 그리는 15스텝 오버레이(공간 모델 2D→3D→시나리오 선택→토폴로지 생성→
+  SOP 로드→Studio 검증/컴파일→Execution 탭→실행→현장 회신→대시보드)를 구현했습니다. 스텝 진입 시 필요한
+  뷰로 자동 전환하고, 대상 미표시 시 중앙 안내로 폴백하며, 닫으면 완전 언마운트됩니다.
+  7. 통합 마감(T7) — 빌드 타입 에러 0. 엔드투엔드 로직 체인 검증(tsx 스크립트, UI 무관): 야간 순찰 데모
+  (토폴로지 생성 결정성→registerGeneratedSet→시드 로드→pickPatrolEndpoints 패트롤 치환→normalizeGraph→
+  validate error 0/warning 0→compile→createRun(EVT-PATROL-001)→START_MISSION→PATROL_WAYPOINT/CHECKPOINT
+  로그·토폴로지 노드명 해석→전 임무 REPORT_ACTION→run COMPLETED+boardRecords 4필드 채움)과 LH2 누출 대응
+  데모(패트롤 치환 없음) 전 항목 통과, seed 42 생성 연결성·exit·수직 승격 확인, 기존 시드 5종 validate
+  error 0, 샘플 셋 회귀 없음(링크 파생·패트롤 경로 산출). localStorage 없는 Node 환경에서 전 체인이 돌아
+  초기화 상태 동작도 확인했습니다. 튜토리얼 15스텝의 targetId 전수가 실제 data-tutorial-id와 일치함을
+  교차 대조했고, dev 서버에서 신규 모듈(scenario/tutorial/webgl/contacts) transform 전부 200을 확인했습니다.
+  번들 500KB 경고는 vite.config.ts에 rolldown codeSplitting 그룹(vendor-xyflow 187KB/vendor-react 178KB/
+  앱 243KB)으로 분리해 해소했습니다. 신규/수정 파일 hex/rgb 하드코딩 0건(WebGL 토큰 값 해석 파서 주석만
+  예외 확인).
+
+  Phase 9 체크리스트 자체 점검: ① 전 단계를 아우르는 seed data(공간·이벤트·SOP·토폴로지·담당자 + 통합
+  시나리오 2종) ② 시나리오 실행기(seed 기반 선택·실행, 토폴로지 임의 생성 후 공간 모델에 표현/연결·패트롤
+  경로 자동 배정) ③ 간단한 WebGL 뷰어(공간 프리즘/시설물·토폴로지 노드/링크 3D 표시) ④ 단계별 조작
+  튜토리얼(마우스 커서 아이콘+하이라이트로 15스텝 안내) ⑤ 공간→이벤트→SOP→토폴로지→실행→회신→대시보드
+  엔드투엔드 데모 시연 가능(시나리오 뷰 단계 카드 6장 + 로직 체인 검증 통과) — 5항목 모두 충족."
 
 [디자인 가이드]
 1. UI 디자인은 루트 폴더 내에 "디자인 시스템 가이드" 내용을 따른다.

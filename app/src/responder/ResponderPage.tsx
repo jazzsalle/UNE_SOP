@@ -296,7 +296,11 @@ function ResponderPage() {
                 </section>
 
                 {/* ④ 할당 임무 + 조치결과 회신 */}
-                <section className="responder-section" aria-label="할당 임무">
+                <section
+                  className="responder-section"
+                  aria-label="할당 임무"
+                  data-tutorial-id="responder-mission-list"
+                >
                   <h3 className="responder-section__title typo-text-md font-bold">
                     할당 임무
                     <span className="responder-section__note typo-text-sm">

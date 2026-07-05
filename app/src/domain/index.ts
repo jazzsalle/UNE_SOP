@@ -8,3 +8,5 @@ export * from "./factory";
 export * from "./seeds";
 export * from "./spatial";
 export * from "./topology";
+export * from "./contacts";
+export * from "./scenario";

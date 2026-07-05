@@ -4,9 +4,11 @@
  * 사이트 셀렉트 + 층 탭 + 좌(SVG 층 평면)/우(선택 상세) 레이아웃으로 점검한다.
  * Phase 7: 토폴로지 오버레이 — 셋 선택 시 현재 층 노드/링크(deriveLinks 파생)를
  * FloorPlanSvg에 겹쳐 그리고, webbuilder export JSON 임포트(TopologyImportDialog)를 지원한다.
+ * Phase 9(T5): "2D 평면 | 3D 뷰" 토글 — 3D 모드는 SpaceViewer3D(순수 WebGL)로 전환하고,
+ * subscribeTopologySets 구독으로 시나리오 실행기가 생성한 셋도 셀렉트에 즉시 반영한다.
  * 데이터는 정적 레지스트리 조회 전용 — SOPGraph/React Flow 편집 상태와 무관하다.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   divisionLabel,
   getFacilities,
@@ -14,10 +16,16 @@ import {
   getSpaces,
   getSpatialSites,
 } from "../domain/spatial";
-import { deriveLinks, getTopologySets, removeImportedSet } from "../domain/topology";
+import {
+  deriveLinks,
+  getTopologySets,
+  removeImportedSet,
+  subscribeTopologySets,
+} from "../domain/topology";
 import type { TopologyLink, TopologyNodeData, TopologySet } from "../domain/topology";
 import FloorPlanSvg, { type PlanSelection } from "./FloorPlanSvg";
 import SpaceDetailPanel from "./SpaceDetailPanel";
+import SpaceViewer3D from "./SpaceViewer3D";
 import TopologyImportDialog from "./TopologyImportDialog";
 import "./spatial.css";
 
@@ -89,8 +97,16 @@ function SpatialModelPage() {
   const [topologySetId, setTopologySetId] = useState<string>("");
   // 임포트 다이얼로그 열림 여부
   const [importOpen, setImportOpen] = useState(false);
-  // 레지스트리 변경(임포트/삭제) 후 재조회 트리거 — 레지스트리는 모듈 상태라 버전으로 무효화
+  // 레지스트리 변경(임포트/생성/삭제) 재조회 트리거 — 레지스트리는 모듈 상태라 버전으로 무효화
   const [topoVersion, setTopoVersion] = useState(0);
+  // 평면(2D)/입체(3D) 뷰 모드 — 3D는 SpaceViewer3D(순수 WebGL) 렌더
+  const [viewMode, setViewMode] = useState<"2d" | "3d">("2d");
+
+  // 레지스트리 구독 — 시나리오 실행기(registerGeneratedSet) 등 외부 변경도 즉시 반영 (Phase 9)
+  useEffect(
+    () => subscribeTopologySets(() => setTopoVersion((version) => version + 1)),
+    [],
+  );
 
   const site = sites.find((s) => s.ufid === siteUfid) ?? null;
   const floors = useMemo(() => getFloors(siteUfid), [siteUfid]);
@@ -142,7 +158,7 @@ function SpatialModelPage() {
     }
   };
 
-  /** 임포트 셋 삭제 — 레지스트리에서 제거·영속 후 선택을 해제한다. */
+  /** 임포트 셋 삭제 — 레지스트리에서 제거 후 선택 해제(목록 갱신은 구독이 처리). */
   const handleRemoveImportedSet = () => {
     if (!selectedTopologySet || selectedTopologySet.source !== "imported") {
       return;
@@ -152,12 +168,10 @@ function SpatialModelPage() {
     if (selection?.kind === "topology") {
       setSelection(null);
     }
-    setTopoVersion((version) => version + 1);
   };
 
-  /** 임포트 성공 — 목록 갱신 + 임포트된 셋 자동 선택 + 다이얼로그 닫기. */
+  /** 임포트 성공 — 임포트된 셋 자동 선택 + 다이얼로그 닫기(목록 갱신은 구독이 처리). */
   const handleImported = (set: TopologySet) => {
-    setTopoVersion((version) => version + 1);
     setTopologySetId(set.setId);
     if (selection?.kind === "topology") {
       setSelection(null);
@@ -216,6 +230,33 @@ function SpatialModelPage() {
           })}
         </div>
 
+        {/* 2D 평면 | 3D 뷰 토글 (Phase 9 T5) — 3D는 순수 WebGL SpaceViewer3D */}
+        <div
+          className="spatial-page__view-toggle"
+          role="group"
+          aria-label="뷰 모드"
+          data-tutorial-id="spatial-3d-toggle"
+        >
+          {(
+            [
+              { mode: "2d", label: "2D 평면" },
+              { mode: "3d", label: "3D 뷰" },
+            ] as const
+          ).map(({ mode, label }) => (
+            <button
+              key={mode}
+              type="button"
+              aria-pressed={viewMode === mode}
+              className={`spatial-page__view-btn typo-text-sm${
+                viewMode === mode ? " spatial-page__view-btn--active font-bold" : ""
+              }`}
+              onClick={() => setViewMode(mode)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         {/* 토폴로지 오버레이 셋 선택 + 임포트/삭제 (Phase 7) */}
         <div className="spatial-page__topo-group">
           <label className="spatial-page__site-label typo-text-sm" htmlFor="spatial-topo-select">
@@ -223,6 +264,7 @@ function SpatialModelPage() {
           </label>
           <select
             id="spatial-topo-select"
+            data-tutorial-id="spatial-topo-select"
             className="spatial-page__site-select typo-text-md"
             value={topologySetId}
             onChange={(event) => handleTopologySetChange(event.target.value)}
@@ -255,34 +297,49 @@ function SpatialModelPage() {
       </div>
 
       <div className="spatial-page__body">
-        {/* 좌: SVG 층 평면 + division 범례 */}
+        {/* 좌: 2D = SVG 층 평면 + division 범례 / 3D = WebGL 뷰어(층 표시는 뷰어 내부 체크박스) */}
         <div className="spatial-page__plan-area">
-          <p className="spatial-page__plan-note typo-text-sm">
-            {site
-              ? `${site.name} · 공간 ${spaces.length}개 · 시설물 ${facilities.length}개${
-                  selectedTopologySet ? ` · 토폴로지 노드 ${floorTopology.nodes.length}개` : ""
-                } — 폴리곤/마커를 클릭해 상세를 확인하세요`
-              : "등록된 사이트가 없습니다"}
-          </p>
-          <FloorPlanSvg
-            spaces={spaces}
-            facilities={facilities}
-            selection={selection}
-            onSelect={setSelection}
-            topologyNodes={floorTopology.nodes}
-            topologyLinks={floorTopology.links}
-            offFloorNodes={floorTopology.offFloorNodes}
-          />
-          {/* division 채움색 범례 — 현재 층에 등장하는 용도만 표시 */}
-          {legendDivisions.length > 0 && (
-            <ul className="spatial-legend">
-              {legendDivisions.map((division) => (
-                <li key={division} className="spatial-legend__item typo-text-sm">
-                  <span className={`spatial-legend__swatch ${divisionClass(division)}`} />
-                  {division} {divisionLabel(division) ?? ""}
-                </li>
-              ))}
-            </ul>
+          {viewMode === "2d" ? (
+            <>
+              <p className="spatial-page__plan-note typo-text-sm">
+                {site
+                  ? `${site.name} · 공간 ${spaces.length}개 · 시설물 ${facilities.length}개${
+                      selectedTopologySet ? ` · 토폴로지 노드 ${floorTopology.nodes.length}개` : ""
+                    } — 폴리곤/마커를 클릭해 상세를 확인하세요`
+                  : "등록된 사이트가 없습니다"}
+              </p>
+              <FloorPlanSvg
+                spaces={spaces}
+                facilities={facilities}
+                selection={selection}
+                onSelect={setSelection}
+                topologyNodes={floorTopology.nodes}
+                topologyLinks={floorTopology.links}
+                offFloorNodes={floorTopology.offFloorNodes}
+              />
+              {/* division 채움색 범례 — 현재 층에 등장하는 용도만 표시 */}
+              {legendDivisions.length > 0 && (
+                <ul className="spatial-legend">
+                  {legendDivisions.map((division) => (
+                    <li key={division} className="spatial-legend__item typo-text-sm">
+                      <span className={`spatial-legend__swatch ${divisionClass(division)}`} />
+                      {division} {divisionLabel(division) ?? ""}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="spatial-page__plan-note typo-text-sm">
+                {site
+                  ? `${site.name} · 3D 뷰${
+                      selectedTopologySet ? ` · 토폴로지 「${selectedTopologySet.name}」` : ""
+                    } — 층 슬래브/공간 프리즘/시설물·토폴로지 마커를 입체로 점검하세요`
+                  : "등록된 사이트가 없습니다"}
+              </p>
+              <SpaceViewer3D siteUfid={siteUfid} topologySetId={topologySetId || null} />
+            </>
           )}
         </div>
 

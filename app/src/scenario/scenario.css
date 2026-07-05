@@ -1,0 +1,404 @@
+/*
+ * 시나리오 실행기(Scenario) 스타일 — Phase 9 Task T4 소유.
+ * 색상은 전부 디자인 시스템 CSS 변수 토큰 사용. hex/rgb 하드코딩 금지.
+ * 레이아웃/뱃지/버튼 관례는 dashboard.css를 따른다.
+ */
+
+/* ── ScenarioPage 골격 ─────────────────────────────────────── */
+
+.scenario {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  background: var(--color-bg-muted);
+}
+
+.scenario__header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-shrink: 0;
+  padding: 14px 20px;
+  background: var(--color-bg-surface);
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.scenario__title {
+  margin: 0;
+  color: var(--color-text-default);
+  white-space: nowrap;
+}
+
+.scenario__subtitle {
+  margin: 0;
+  color: var(--color-text-subtle);
+}
+
+/* 좌측 시나리오 선택/개요/담당자(380px) / 우측 단계 카드(1fr) 2컬럼 */
+.scenario__body {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── 좌측 사이드 ────────────────────────────────────────────── */
+
+.scenario__side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px;
+  background: var(--color-bg-surface);
+  border-right: 1px solid var(--color-border-subtle);
+}
+
+.scenario-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.scenario-picker__label {
+  color: var(--color-text-subtle);
+}
+
+.scenario-select {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--color-bg-surface);
+  color: var(--color-text-default);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-control);
+}
+
+/* 개요 카드 — 이름/설명/메타 kv + 리셋 버튼 */
+.scenario-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-control);
+}
+
+.scenario-overview__name {
+  margin: 0;
+  color: var(--color-text-default);
+}
+
+.scenario-overview__desc {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.scenario-kv {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 0;
+}
+
+.scenario-kv dt {
+  color: var(--color-text-subtle);
+  white-space: nowrap;
+}
+
+.scenario-kv dd {
+  margin: 0;
+  color: var(--color-text-default);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ── 담당자 명단 (ContactRoster) ────────────────────────────── */
+
+.contact-roster {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.contact-roster__title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  color: var(--color-text-default);
+}
+
+.contact-roster__count {
+  color: var(--color-text-placeholder);
+}
+
+.contact-roster__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.contact-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-control);
+}
+
+.contact-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.contact-card__name {
+  color: var(--color-text-default);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.contact-card__meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--color-text-subtle);
+}
+
+.contact-card__phone {
+  white-space: nowrap;
+  color: var(--color-text-placeholder);
+}
+
+/* ── 우측 단계 카드 목록 ────────────────────────────────────── */
+
+.scenario__steps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 20px;
+}
+
+.scenario-step {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-left: 3px solid var(--color-border-subtle);
+  border-radius: var(--radius-control);
+}
+
+/* 진행 가능 단계 — 좌측 brand 보더로 현재 위치 강조 */
+.scenario-step--ready {
+  border-left-color: var(--color-border-brand);
+}
+
+.scenario-step--done {
+  border-left-color: var(--color-border-success);
+}
+
+.scenario-step__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* 순번 원형 마커 */
+.scenario-step__index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  background: var(--color-bg-muted);
+  color: var(--color-text-subtle);
+  border-radius: 50%;
+}
+
+.scenario-step--ready .scenario-step__index {
+  background: var(--color-bg-brand-subtle);
+  color: var(--color-text-brand);
+}
+
+.scenario-step--done .scenario-step__index {
+  background: var(--color-bg-success-subtle);
+  color: var(--color-text-success);
+}
+
+.scenario-step__title {
+  margin: 0;
+  color: var(--color-text-default);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.scenario-step__head .scenario-btn {
+  margin-left: auto;
+}
+
+.scenario-step__desc {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.scenario-step__result {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-control);
+}
+
+.scenario-step__summary {
+  margin: 0;
+  color: var(--color-text-default);
+  overflow-wrap: anywhere;
+}
+
+.scenario-step__hint {
+  margin: 0;
+  color: var(--color-text-subtle);
+}
+
+.scenario-step__error {
+  margin: 0;
+  padding: 8px 10px;
+  background: var(--color-bg-danger-subtle);
+  color: var(--color-text-danger);
+  border-radius: var(--radius-control);
+}
+
+.scenario-empty {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px dashed var(--color-border-subtle);
+  border-radius: var(--radius-control);
+  color: var(--color-text-placeholder);
+}
+
+/* ── ④ 실행 카드 임무 미니 상태 목록 ────────────────────────── */
+
+.scenario-missions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scenario-missions__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-control);
+}
+
+.scenario-missions__title {
+  color: var(--color-text-default);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.scenario-missions__meta {
+  margin-left: auto;
+  color: var(--color-text-subtle);
+  white-space: nowrap;
+}
+
+/* ── 버튼 — primary(단계 실행) / outline(내비·리셋) ─────────── */
+
+.scenario-btn {
+  padding: 6px 12px;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.scenario-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.scenario-btn--primary {
+  background: var(--color-bg-brand);
+  color: var(--color-text-on-brand);
+  border: 1px solid var(--color-border-brand);
+}
+
+.scenario-btn--primary:not(:disabled):hover {
+  background: var(--color-interactive-brand-hover);
+}
+
+.scenario-btn--outline {
+  background: var(--color-bg-surface);
+  color: var(--color-text-brand);
+  border: 1px solid var(--color-border-brand);
+}
+
+.scenario-btn--outline:not(:disabled):hover {
+  background: var(--color-bg-brand-subtle);
+}
+
+/* ── 상태 뱃지 — subtle 배경 + status 텍스트 토큰(dashboard-badge 관례) ── */
+
+.scenario-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.scenario-badge--info {
+  background: var(--color-bg-info-subtle);
+  color: var(--color-text-info);
+}
+
+.scenario-badge--success {
+  background: var(--color-bg-success-subtle);
+  color: var(--color-text-success);
+}
+
+.scenario-badge--warning {
+  background: var(--color-bg-warning-subtle);
+  color: var(--color-text-warning);
+}
+
+.scenario-badge--danger {
+  background: var(--color-bg-danger-subtle);
+  color: var(--color-text-danger);
+}
+
+.scenario-badge--neutral {
+  background: var(--color-bg-muted);
+  color: var(--color-text-subtle);
+}
+
+.scenario-badge--brand {
+  background: var(--color-bg-brand-subtle);
+  color: var(--color-text-brand);
+}

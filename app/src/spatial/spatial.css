@@ -346,6 +346,115 @@
   pointer-events: none;
 }
 
+/* ── 2D/3D 뷰 토글 + WebGL 3D 뷰어 (Phase 9 T5) ─────────────── */
+
+/* 세그먼트형 토글 그룹 — 2D 평면 | 3D 뷰 */
+.spatial-page__view-toggle {
+  display: inline-flex;
+  margin-bottom: 8px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-control);
+  overflow: hidden;
+}
+
+.spatial-page__view-btn {
+  height: 28px;
+  padding: 0 12px;
+  background: var(--color-bg-surface);
+  border: none;
+  color: var(--color-text-subtle);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.spatial-page__view-btn + .spatial-page__view-btn {
+  border-left: 1px solid var(--color-border-default);
+}
+
+.spatial-page__view-btn:hover {
+  background: var(--color-bg-subtle);
+}
+
+.spatial-page__view-btn--active {
+  background: var(--color-bg-brand-subtle);
+  color: var(--color-text-brand);
+}
+
+/* 3D 뷰어 컨테이너 — 층 체크박스 바 + 캔버스 세로 스택 */
+.space-viewer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* 층 표시/숨김 체크박스 바 */
+.space-viewer__floor-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+}
+
+.space-viewer__floor-label {
+  color: var(--color-text-subtle);
+  white-space: nowrap;
+}
+
+.space-viewer__floor-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--color-text-default);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* 조작 힌트 — 우측 정렬 */
+.space-viewer__hint {
+  margin-left: auto;
+  color: var(--color-text-placeholder);
+  white-space: nowrap;
+}
+
+/* 캔버스 래퍼 — 폴백 문구 오버레이 기준 컨테이너 */
+.space-viewer__canvas-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 320px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-control);
+  overflow: hidden;
+}
+
+/* WebGL 캔버스 — 백킹 크기는 SpaceViewer3D가 DPR 반영해 동기화 */
+.space-viewer__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none;
+}
+
+.space-viewer__canvas:active {
+  cursor: grabbing;
+}
+
+/* WebGL 미지원/컨텍스트 유실 안내 — 캔버스 중앙 오버레이 */
+.space-viewer__fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 16px;
+  text-align: center;
+  background: var(--color-bg-muted);
+  color: var(--color-text-subtle);
+}
+
 /* 툴바 토폴로지 그룹 — 셋 셀렉트 + 삭제/임포트 버튼을 우측에 모은다 */
 .spatial-page__topo-group {
   display: flex;

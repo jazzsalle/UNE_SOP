@@ -75,6 +75,9 @@ function BottomTabs() {
               type="button"
               role="tab"
               aria-selected={active}
+              data-tutorial-id={
+                tab.id === "execution" ? "studio-tab-execution" : undefined
+              }
               onClick={() => setActiveTab(tab.id)}
               className={`typo-text-md${active ? " font-bold" : ""}`}
               style={{

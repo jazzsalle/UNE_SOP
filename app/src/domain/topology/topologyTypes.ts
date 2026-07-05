@@ -49,14 +49,14 @@ export interface TopologyNodeData {
  * webbuilder export에는 셋 개념이 없어 본 프로젝트가 임포트 단위로 도입했다.
  */
 export interface TopologySet {
-  /** 셋 식별자 — 샘플은 고정 id, 임포트는 `topo-imported-{uuid8}`. */
+  /** 셋 식별자 — 샘플은 고정 id, 임포트는 `topo-imported-{uuid8}`, 생성은 `topo-generated-{siteUfid}-{seed}`. */
   setId: string;
   /** 셋 표시명. */
   name: string;
   /** 대상 사이트 UFID(공간객체등록번호) — 미상이면 빈 문자열. */
   siteUfid: string;
-  /** 출처 — 내장 샘플 또는 사용자 임포트. */
-  source: "sample" | "imported";
+  /** 출처 — 내장 샘플 / 사용자 임포트 / 임의 생성기(generateTopology). */
+  source: "sample" | "imported" | "generated";
   /** 노드 목록. */
   nodes: TopologyNodeData[];
 }
