@@ -1,7 +1,10 @@
 /**
  * Node Palette — 좌측 패널.
- * Phase 2에서 노드 템플릿 목록이 채워지기 전까지 빈 placeholder를 표시한다.
+ * 템플릿 레지스트리(TEMPLATE_GROUPS)의 9개 그룹·28개 템플릿을 정적 목록으로 표시한다.
+ * (드래그앤드롭·그룹 접기는 Phase 3 범위)
  */
+import { TEMPLATE_GROUPS } from "../../domain";
+
 function NodePalette() {
   return (
     <aside
@@ -30,18 +33,59 @@ function NodePalette() {
       <div
         style={{
           flex: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: 16,
+          minHeight: 0,
+          overflowY: "auto",
+          padding: "8px 0 16px",
         }}
       >
-        <p
-          className="typo-text-md"
-          style={{ margin: 0, color: "var(--color-text-placeholder)" }}
-        >
-          노드 템플릿이 없습니다
-        </p>
+        {TEMPLATE_GROUPS.map(({ group, label, templates }) => (
+          <section key={group} style={{ padding: "8px 0" }}>
+            <h3
+              className="typo-text-sm font-bold"
+              style={{
+                margin: 0,
+                padding: "4px 16px",
+                color: "var(--color-text-subtle)",
+                textTransform: "uppercase",
+                letterSpacing: "0.04em",
+              }}
+            >
+              {label}
+            </h3>
+            <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+              {templates.map((template) => (
+                <li
+                  key={template.templateId}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "6px 16px",
+                  }}
+                >
+                  <span
+                    aria-hidden
+                    style={{
+                      flexShrink: 0,
+                      width: 4,
+                      height: 16,
+                      borderRadius: 2,
+                      background: template.accentColorToken
+                        ? `var(${template.accentColorToken})`
+                        : "var(--color-bg-neutral)",
+                    }}
+                  />
+                  <span
+                    className="typo-text-md"
+                    style={{ color: "var(--color-text-default)" }}
+                  >
+                    {template.label}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
       </div>
     </aside>
   );
