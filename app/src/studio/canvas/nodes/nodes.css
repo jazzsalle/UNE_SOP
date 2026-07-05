@@ -172,3 +172,16 @@
   padding: 8px 14px 12px;
   color: var(--color-text-placeholder);
 }
+
+/* ===== 시뮬레이션 실행 경로 하이라이트 — 노드 (Phase 4 T7) =====
+ * RF는 노드 className을 래퍼 .react-flow__node에 부여하므로
+ * 직계 자식인 노드 루트(.sop-node / .sop-group-node)를 타겟한다.
+ * 강조 링은 선택 상태(box-shadow focus)보다 우선 적용된다. */
+.react-flow__node.sim-node--active > .sop-node,
+.react-flow__node.sim-node--active > .sop-group-node {
+  box-shadow: 0 0 0 2px var(--color-border-brand);
+}
+
+.react-flow__node.sim-node--dimmed {
+  opacity: 0.3;
+}

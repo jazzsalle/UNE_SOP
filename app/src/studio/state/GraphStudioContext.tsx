@@ -8,27 +8,47 @@ import {
   useCallback,
   useContext,
   useMemo,
+  useState,
   type ReactNode,
 } from "react";
 import {
   useEdgesState,
   useNodesState,
+  useReactFlow,
   type Connection,
   type Edge,
   type OnEdgesChange,
   type OnNodesChange,
   type XYPosition,
 } from "@xyflow/react";
-import { createNodeFromTemplate, getTemplate } from "../../domain";
-import type { GraphNode } from "../../domain";
+import { createNodeFromTemplate, getSeed, getTemplate } from "../../domain";
+import type {
+  EventContext,
+  GraphNode,
+  SOPGraph,
+  ValidationResult,
+} from "../../domain";
+import {
+  normalizeGraph,
+  saveCompiledGraph,
+  simulate,
+  validateGraph,
+} from "../../engine";
+import type {
+  GraphMeta,
+  SimulateOptions,
+  SimulationResult,
+} from "../../engine";
 import type { StudioEdge, StudioNode } from "./editorTypes";
 import { checkConnection } from "./portCompatibility";
 import { EDGE_COLOR_TOKEN } from "./flowTokens";
 import { applyGroupCollapse } from "./groupCollapse";
+import { toEditorSnapshot, toStudioGraph } from "./graphIO";
 
 /**
- * Graph Studio 공유 API — 병렬 태스크(T2~T5)가 의존하는 계약.
- * 시그니처를 변경하려면 phase-3 계획 문서를 먼저 갱신할 것.
+ * Graph Studio 공유 API — 병렬 태스크가 의존하는 계약.
+ * (Phase 3 편집 API + Phase 4 검증/컴파일/시뮬레이션 확장 — T5/T6/T7이 의존)
+ * 시그니처를 변경하려면 해당 phase 계획 문서를 먼저 갱신할 것.
  */
 export interface GraphStudioApi {
   nodes: StudioNode[];
@@ -58,6 +78,32 @@ export interface GraphStudioApi {
   toggleGroupCollapse: (groupId: string) => void;
   /** parentId === groupId인 자식 노드들의 도메인 GraphNode 목록. */
   getGroupChildren: (groupId: string) => GraphNode[];
+
+  // ── Phase 4 확장: 검증/컴파일/시뮬레이션 (T5/T6/T7이 의존하는 계약) ──
+  /** 현재 편집 중인 그래프의 메타 정보 — normalizeGraph() 입력. */
+  graphMeta: GraphMeta;
+  updateGraphMeta: (patch: Partial<GraphMeta>) => void;
+  /** 마지막 runValidate/runCompile 결과. 아직 실행 전이면 null. */
+  validationResult: ValidationResult | null;
+  /** 마지막 runCompile 산출물(validation 첨부 SOPGraph). 아직 실행 전이면 null. */
+  compiledGraph: SOPGraph | null;
+  /** 마지막 runSimulate 결과 — 캔버스 하이라이트/Runtime Preview의 소스. */
+  simulation: SimulationResult | null;
+  /** EventContext 시뮬레이터 다이얼로그 열림 상태 (SimulateDialog가 소비). */
+  simulateDialogOpen: boolean;
+  setSimulateDialogOpen: (open: boolean) => void;
+  /** normalizeGraph(toEditorSnapshot(...), graphMeta) → validateGraph. 상태 저장 후 반환. */
+  runValidate: () => ValidationResult;
+  /** 검증 결과를 graph.validation에 첨부해 localStorage에 저장하고 반환. */
+  runCompile: () => SOPGraph;
+  /** normalize → simulate. 결과를 simulation 상태에 저장 후 반환. */
+  runSimulate: (ctx: EventContext, opts?: SimulateOptions) => SimulationResult;
+  /** 시뮬레이션 결과(캔버스 하이라이트 포함)를 해제한다. */
+  clearSimulation: () => void;
+  /** 도메인 템플릿 시드를 캔버스에 로드한다 — 기존 노드/엣지 대체 + fitView. */
+  loadDomainTemplate: (seedId: string) => void;
+  /** 해당 노드만 selected:true로 만든다 (검증 이슈 클릭 → 노드 포커스용). */
+  selectNode: (nodeId: string) => void;
 }
 
 const GraphStudioContext = createContext<GraphStudioApi | null>(null);
@@ -66,6 +112,21 @@ const GraphStudioContext = createContext<GraphStudioApi | null>(null);
 export function GraphStudioProvider({ children }: { children: ReactNode }) {
   const [nodes, setNodes, onNodesChange] = useNodesState<StudioNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<StudioEdge>([]);
+  const { fitView } = useReactFlow<StudioNode, StudioEdge>();
+
+  // Phase 4 실행 상태 — 노드/엣지 변경 시 기존 validationResult/simulation을
+  // 자동 무효화하지 **않는다** (POC 단순화 — 사용자가 다시 Validate/Simulate하면 갱신).
+  const [graphMeta, setGraphMeta] = useState<GraphMeta>(() => ({
+    graphId: `graph-${crypto.randomUUID().slice(0, 8)}`,
+    name: "새 SOP Graph",
+    domain: "generic",
+    version: "0.1.0",
+  }));
+  const [validationResult, setValidationResult] =
+    useState<ValidationResult | null>(null);
+  const [compiledGraph, setCompiledGraph] = useState<SOPGraph | null>(null);
+  const [simulation, setSimulation] = useState<SimulationResult | null>(null);
+  const [simulateDialogOpen, setSimulateDialogOpen] = useState(false);
 
   const selectedNode = useMemo(
     () => nodes.find((node) => node.selected) ?? null,
@@ -201,6 +262,85 @@ export function GraphStudioProvider({ children }: { children: ReactNode }) {
     [nodes],
   );
 
+  // ── Phase 4: 검증/컴파일/시뮬레이션/템플릿 로드 ──
+
+  const updateGraphMeta = useCallback((patch: Partial<GraphMeta>) => {
+    setGraphMeta((prev) => ({ ...prev, ...patch }));
+  }, []);
+
+  /** 편집기 상태 → normalizeGraph. 실행 로직 3종(runValidate/runCompile/runSimulate)의 공통 입구. */
+  const normalizeCurrent = useCallback(
+    (): SOPGraph => normalizeGraph(toEditorSnapshot(nodes, edges), graphMeta),
+    [nodes, edges, graphMeta],
+  );
+
+  const runValidate = useCallback((): ValidationResult => {
+    const result = validateGraph(normalizeCurrent());
+    setValidationResult(result);
+    return result;
+  }, [normalizeCurrent]);
+
+  const runCompile = useCallback((): SOPGraph => {
+    const graph = normalizeCurrent();
+    const result = validateGraph(graph);
+    graph.validation = result;
+    saveCompiledGraph(graph);
+    setValidationResult(result);
+    setCompiledGraph(graph);
+    return graph;
+  }, [normalizeCurrent]);
+
+  const runSimulate = useCallback(
+    (ctx: EventContext, opts?: SimulateOptions): SimulationResult => {
+      const result = simulate(normalizeCurrent(), ctx, opts);
+      setSimulation(result);
+      return result;
+    },
+    [normalizeCurrent],
+  );
+
+  const clearSimulation = useCallback(() => {
+    setSimulation(null);
+  }, []);
+
+  const loadDomainTemplate = useCallback(
+    (seedId: string) => {
+      const seed = getSeed(seedId);
+      if (!seed) {
+        return;
+      }
+      // 시드 원본 오염 방지 — 깊은 복제 후 편집기 노드/엣지로 변환.
+      const graph = structuredClone(seed.graph);
+      const studio = toStudioGraph(graph);
+      setNodes(studio.nodes);
+      setEdges(studio.edges);
+      setGraphMeta((prev) => ({
+        ...prev,
+        graphId: graph.graphId,
+        name: graph.name,
+        domain: graph.domain,
+        version: graph.version,
+        description: graph.description,
+      }));
+      // 이전 그래프의 실행 결과는 새 템플릿과 무관하므로 초기화한다.
+      setValidationResult(null);
+      setCompiledGraph(null);
+      setSimulation(null);
+      // RF가 새 노드를 커밋한 뒤 화면 맞춤 (즉시 호출하면 빈 캔버스 기준으로 fit됨).
+      setTimeout(() => fitView({ padding: 0.2 }), 50);
+    },
+    [setNodes, setEdges, fitView],
+  );
+
+  const selectNode = useCallback(
+    (nodeId: string) => {
+      setNodes((prev) =>
+        prev.map((node) => ({ ...node, selected: node.id === nodeId })),
+      );
+    },
+    [setNodes],
+  );
+
   const api = useMemo<GraphStudioApi>(
     () => ({
       nodes,
@@ -216,6 +356,19 @@ export function GraphStudioProvider({ children }: { children: ReactNode }) {
       updateNodeProperty,
       toggleGroupCollapse,
       getGroupChildren,
+      graphMeta,
+      updateGraphMeta,
+      validationResult,
+      compiledGraph,
+      simulation,
+      simulateDialogOpen,
+      setSimulateDialogOpen,
+      runValidate,
+      runCompile,
+      runSimulate,
+      clearSimulation,
+      loadDomainTemplate,
+      selectNode,
     }),
     [
       nodes,
@@ -231,6 +384,18 @@ export function GraphStudioProvider({ children }: { children: ReactNode }) {
       updateNodeProperty,
       toggleGroupCollapse,
       getGroupChildren,
+      graphMeta,
+      updateGraphMeta,
+      validationResult,
+      compiledGraph,
+      simulation,
+      simulateDialogOpen,
+      runValidate,
+      runCompile,
+      runSimulate,
+      clearSimulation,
+      loadDomainTemplate,
+      selectNode,
     ],
   );
 

@@ -1,0 +1,418 @@
+/*
+ * Runtime Preview / Simulate Dialog 스타일 — Phase 4 Task T6 소유.
+ * 색상은 전부 디자인 시스템 CSS 변수 토큰(colors.css / colors-status.css) 사용.
+ * hex/rgb 하드코딩 금지 (elevation 그림자는 primitive/shadow.css 토큰 참조).
+ */
+
+/* ── SimulateDialog ─────────────────────────────────────────── */
+
+.sim-dialog__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 반투명 배경막 — --color-bg-overlay 토큰 + opacity (rgba 하드코딩 금지). */
+.sim-dialog__backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--color-bg-overlay);
+  opacity: 0.55;
+}
+
+.sim-dialog {
+  position: relative;
+  width: 520px;
+  max-width: calc(100vw - 48px);
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-surface);
+  box-shadow: var(--elevation-06);
+}
+
+.sim-dialog__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.sim-dialog__title {
+  margin: 0;
+  color: var(--color-text-default);
+}
+
+.sim-dialog__close {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--color-text-placeholder);
+  cursor: pointer;
+}
+
+.sim-dialog__close:hover {
+  background: var(--color-bg-muted);
+  color: var(--color-text-default);
+}
+
+.sim-dialog__form {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 20px;
+}
+
+.sim-dialog__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.sim-dialog__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sim-dialog__label {
+  color: var(--color-text-subtle);
+}
+
+.sim-dialog__input,
+.sim-dialog__select,
+.sim-dialog__textarea {
+  padding: 6px 10px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-surface);
+  color: var(--color-text-default);
+}
+
+.sim-dialog__input:focus,
+.sim-dialog__select:focus,
+.sim-dialog__textarea:focus {
+  outline: none;
+  border-color: var(--color-border-focus);
+}
+
+.sim-dialog__textarea {
+  min-height: 72px;
+  resize: vertical;
+  font-family: var(--font-family-mono, monospace);
+}
+
+.sim-dialog__textarea--error {
+  border-color: var(--color-border-danger);
+}
+
+/* measuredValues JSON 파싱 실패 인라인 오류 */
+.sim-dialog__error {
+  margin: 0;
+  color: var(--color-text-danger);
+}
+
+.sim-dialog__radio-group {
+  display: flex;
+  gap: 16px;
+}
+
+.sim-dialog__radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-default);
+  cursor: pointer;
+}
+
+.sim-dialog__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.sim-dialog__btn {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: var(--radius-control);
+  border: 1px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sim-dialog__btn--cancel {
+  background: var(--color-bg-surface);
+  border-color: var(--color-border-default);
+  color: var(--color-text-default);
+}
+
+.sim-dialog__btn--run {
+  background: var(--color-bg-info);
+  color: var(--color-text-on-brand);
+}
+
+/* ── RuntimePreviewPanel ────────────────────────────────────── */
+
+.runtime-panel {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 12px 16px;
+  background: var(--color-bg-surface);
+}
+
+.runtime-panel__placeholder {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-placeholder);
+}
+
+/* 트리거 미매칭(reason) 안내 */
+.runtime-panel__mismatch {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: var(--radius-control);
+  background: var(--color-bg-danger-subtle);
+  color: var(--color-text-danger);
+}
+
+.runtime-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.runtime-section__title {
+  margin: 0;
+  color: var(--color-text-default);
+}
+
+.runtime-section__empty {
+  margin: 0;
+  color: var(--color-text-placeholder);
+}
+
+/* 상태/심각도 뱃지 — subtle 배경 + status 텍스트 토큰 */
+.runtime-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.runtime-badge--info {
+  background: var(--color-bg-info-subtle);
+  color: var(--color-text-info);
+}
+
+.runtime-badge--success {
+  background: var(--color-bg-success-subtle);
+  color: var(--color-text-success);
+}
+
+.runtime-badge--warning {
+  background: var(--color-bg-warning-subtle);
+  color: var(--color-text-warning);
+}
+
+.runtime-badge--danger {
+  background: var(--color-bg-danger-subtle);
+  color: var(--color-text-danger);
+}
+
+.runtime-badge--brand {
+  background: var(--color-bg-brand-subtle);
+  color: var(--color-text-brand);
+}
+
+.runtime-badge--neutral {
+  background: var(--color-bg-muted);
+  color: var(--color-text-subtle);
+}
+
+/* §1 Triggered Event — key/value 그리드 */
+.runtime-kv {
+  display: grid;
+  grid-template-columns: auto 1fr auto 1fr;
+  column-gap: 12px;
+  row-gap: 4px;
+  align-items: center;
+}
+
+.runtime-kv__key {
+  color: var(--color-text-placeholder);
+  white-space: nowrap;
+}
+
+.runtime-kv__value {
+  color: var(--color-text-default);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* §2 Execution Path — 노드 label 칩 + 화살표 */
+.runtime-path {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.runtime-path__chip {
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--color-bg-brand-subtle);
+  color: var(--color-text-brand);
+  white-space: nowrap;
+}
+
+.runtime-path__arrow {
+  color: var(--color-text-placeholder);
+}
+
+/* §3 Missions / §4 Notifications — 표 */
+.runtime-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.runtime-table th {
+  padding: 4px 8px;
+  text-align: left;
+  color: var(--color-text-placeholder);
+  border-bottom: 1px solid var(--color-border-subtle);
+  white-space: nowrap;
+}
+
+.runtime-table td {
+  padding: 5px 8px;
+  color: var(--color-text-default);
+  border-bottom: 1px solid var(--color-border-subtle);
+  vertical-align: top;
+}
+
+/* §5 Responses */
+.runtime-response {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 3px 0;
+}
+
+.runtime-response__title {
+  color: var(--color-text-default);
+}
+
+.runtime-response__meta {
+  color: var(--color-text-placeholder);
+}
+
+/* NO_RESPONSE 시 escalation 안내 문구 */
+.runtime-response__escalation {
+  margin: 4px 0 0;
+  padding: 6px 10px;
+  border-radius: var(--radius-control);
+  background: var(--color-bg-warning-subtle);
+  color: var(--color-text-warning);
+}
+
+/* §6 Situation Board — fields 카드 */
+.runtime-board-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-subtle);
+}
+
+.runtime-board-card__row {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 8px;
+}
+
+.runtime-board-card__key {
+  color: var(--color-text-placeholder);
+  white-space: nowrap;
+}
+
+.runtime-board-card__value {
+  color: var(--color-text-default);
+  overflow-wrap: anywhere;
+}
+
+/* ── TimelineView — 세로 타임라인 ───────────────────────────── */
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.timeline__entry {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 0 0 12px 18px;
+}
+
+/* 세로 연결선 — 마지막 항목에서는 숨긴다. */
+.timeline__entry::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 6px;
+  bottom: -6px;
+  width: 2px;
+  background: var(--color-border-subtle);
+}
+
+.timeline__entry:last-child::before {
+  display: none;
+}
+
+/* kind별 점 — 색은 인라인 style로 status 토큰 var()를 주입한다. */
+.timeline__dot {
+  position: absolute;
+  left: 0;
+  top: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-bg-neutral);
+}
+
+.timeline__offset {
+  min-width: 44px;
+  color: var(--color-text-brand);
+  white-space: nowrap;
+}
+
+.timeline__message {
+  color: var(--color-text-default);
+  overflow-wrap: anywhere;
+}

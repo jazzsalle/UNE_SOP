@@ -1,0 +1,207 @@
+/**
+ * 하단 패널 공용 스타일 — Validation / Compile 패널.
+ * 색상은 전부 디자인 시스템 CSS 변수 토큰 사용 (hex/rgb 하드코딩 금지).
+ */
+
+/* 상단 보더는 컨테이너(BottomTabs)가 담당한다 — 이중선 방지. */
+.validation-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--color-bg-surface);
+}
+
+.validation-panel__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.validation-panel__title {
+  margin: 0;
+  color: var(--color-text-default);
+}
+
+/* valid 상태 뱃지 — 성공/실패 subtle 배경 + 상태 텍스트 색 */
+.validation-panel__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.validation-panel__badge--valid {
+  background: var(--color-bg-success-subtle);
+  color: var(--color-text-success);
+}
+
+.validation-panel__badge--invalid {
+  background: var(--color-bg-danger-subtle);
+  color: var(--color-text-danger);
+}
+
+.validation-panel__timestamp {
+  color: var(--color-text-placeholder);
+}
+
+/* 본문 — 좌(이슈 목록) · 우(JSON 프리뷰) 2열 */
+.validation-panel__body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.validation-panel__column {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+.validation-panel__column + .validation-panel__column {
+  border-left: 1px solid var(--color-border-subtle);
+}
+
+.validation-panel__column-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  color: var(--color-text-subtle);
+}
+
+.validation-panel__column-header .validation-panel__spacer {
+  flex: 1;
+}
+
+/* 안내 placeholder — 결과가 없을 때 중앙 문구 */
+.validation-panel__placeholder {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  margin: 0;
+  color: var(--color-text-placeholder);
+  text-align: center;
+}
+
+/* 이슈 0건 — 검증 통과 표시 */
+.validation-panel__pass {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 16px;
+  margin: 0;
+  color: var(--color-text-success);
+}
+
+/* 이슈 목록 */
+.validation-issue-list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+}
+
+.validation-issue {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 16px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  color: var(--color-text-default);
+}
+
+/* nodeId가 있는 이슈만 클릭 가능 — 노드 선택 + 화면 중앙 이동 */
+button.validation-issue {
+  cursor: pointer;
+}
+
+button.validation-issue:hover {
+  background: var(--color-bg-muted);
+}
+
+/* level 점 — error/warning/info 상태 텍스트 토큰 */
+.validation-issue__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  align-self: center;
+}
+
+.validation-issue__dot--error {
+  background: var(--color-text-danger);
+}
+
+.validation-issue__dot--warning {
+  background: var(--color-text-warning);
+}
+
+.validation-issue__dot--info {
+  background: var(--color-text-info);
+}
+
+.validation-issue__message {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.validation-issue__node-id {
+  flex: none;
+  color: var(--color-text-placeholder);
+  white-space: nowrap;
+}
+
+/* JSON 프리뷰 */
+.json-preview__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.json-preview__button {
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-surface);
+  color: var(--color-text-default);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.json-preview__button:hover {
+  background: var(--color-bg-muted);
+}
+
+.json-preview__caption {
+  color: var(--color-text-placeholder);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.json-preview__pre {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  margin: 0;
+  padding: 12px 16px;
+  background: var(--color-bg-muted);
+  color: var(--color-text-default);
+}

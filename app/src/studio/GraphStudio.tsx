@@ -1,17 +1,19 @@
 import { ReactFlowProvider } from "@xyflow/react";
 import GraphCanvas from "./canvas/GraphCanvas";
+import BottomTabs from "./panels/BottomTabs";
 import NodePalette from "./panels/NodePalette";
 import PropertyInspector from "./panels/PropertyInspector";
-import ValidationPanel from "./panels/ValidationPanel";
+import SimulateDialog from "./panels/SimulateDialog";
+import StudioToolbar from "./panels/StudioToolbar";
 import { GraphStudioProvider } from "./state/GraphStudioContext";
 
 /**
  * Graph Studio — 4영역 레이아웃.
  *
- *  ┌────────────── header ──────────────┐
- *  │ Node Palette │ Canvas │ Inspector  │
- *  ├──────── Validation / Compile ──────┤
- *  └────────────────────────────────────┘
+ *  ┌────────────────── header ──────────────────┐
+ *  │ Node Palette │ Canvas │ Inspector          │
+ *  ├── Validation / Compile | Runtime Preview ──┤
+ *  └────────────────────────────────────────────┘
  *
  * 레이아웃 치수는 html font-size 1px 전제(rem 기반 토큰)와 무관하게
  * px 단위 inline style로 직접 지정한다.
@@ -36,11 +38,11 @@ function GraphStudioLayout() {
       style={{
         display: "grid",
         gridTemplateColumns: "260px 1fr 320px",
-        gridTemplateRows: "auto 1fr 180px",
+        gridTemplateRows: "auto 1fr 260px",
         gridTemplateAreas: `
           "header header header"
           "palette canvas inspector"
-          "validation validation validation"
+          "bottom bottom bottom"
         `,
         height: "100vh",
         background: "var(--color-bg-muted)",
@@ -60,10 +62,11 @@ function GraphStudioLayout() {
       >
         <h1
           className="typo-title-sm font-bold"
-          style={{ margin: 0, color: "var(--color-text-default)" }}
+          style={{ margin: 0, color: "var(--color-text-default)", flexShrink: 0 }}
         >
           Visual SOP Graph Studio
         </h1>
+        <StudioToolbar />
       </header>
 
       <div style={{ gridArea: "palette", minHeight: 0 }}>
@@ -78,9 +81,12 @@ function GraphStudioLayout() {
         <PropertyInspector />
       </div>
 
-      <div style={{ gridArea: "validation", minHeight: 0 }}>
-        <ValidationPanel />
+      <div style={{ gridArea: "bottom", minHeight: 0 }}>
+        <BottomTabs />
       </div>
+
+      {/* EventContext 시뮬레이터 — simulateDialogOpen이 true일 때만 오버레이로 뜬다. */}
+      <SimulateDialog />
     </div>
   );
 }

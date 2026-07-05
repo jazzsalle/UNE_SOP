@@ -30,3 +30,14 @@
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-control);
 }
+
+/* ===== 시뮬레이션 실행 경로 하이라이트 — 엣지 (Phase 4 T7) =====
+ * RF는 엣지 className을 .react-flow__edge(g 요소)에 부여하고,
+ * 실제 선은 자식 .react-flow__edge-path가 그린다. */
+.react-flow__edge.sim-edge--active .react-flow__edge-path {
+  stroke-width: 3;
+}
+
+.react-flow__edge.sim-edge--dimmed {
+  opacity: 0.15;
+}

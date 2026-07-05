@@ -7,7 +7,7 @@
  * 담당: 팔레트 드롭 생성(그룹 자식 배치 포함), 타입드 포트 연결 검증,
  * MiniMap/Controls/Background, Delete/Backspace 삭제.
  */
-import { useCallback, type DragEvent } from "react";
+import { useCallback, useMemo, type DragEvent } from "react";
 import {
   Background,
   BackgroundVariant,
@@ -78,8 +78,45 @@ function GraphCanvas() {
     onConnect,
     isValidConnection,
     addNodeFromTemplate,
+    simulation,
   } = useStudio();
   const { screenToFlowPosition } = useReactFlow();
+
+  // ── 실행 경로 하이라이트 (Phase 4 T7) ──
+  // simulation 존재 시 방문 노드/엣지에 className만 입힌 **파생 배열**을 만들어
+  // ReactFlow에 넘긴다. 원본 nodes/edges 상태는 불변이므로 clearSimulation 시
+  // 자동 원상 복구되고, RF change 이벤트는 id 기준이라 드래그/연결 등 편집도 유지된다.
+  const visited = useMemo(
+    () => new Set(simulation?.visitedNodeIds ?? []),
+    [simulation],
+  );
+  const traversed = useMemo(
+    () => new Set(simulation?.traversedEdgeIds ?? []),
+    [simulation],
+  );
+  const displayNodes = useMemo(
+    () =>
+      simulation
+        ? nodes.map((node) => ({
+            ...node,
+            className: visited.has(node.id)
+              ? "sim-node--active"
+              : "sim-node--dimmed",
+          }))
+        : nodes,
+    [simulation, nodes, visited],
+  );
+  const displayEdges = useMemo(
+    () =>
+      simulation
+        ? edges.map((edge) =>
+            traversed.has(edge.id)
+              ? { ...edge, animated: true, className: "sim-edge--active" }
+              : { ...edge, className: "sim-edge--dimmed" },
+          )
+        : edges,
+    [simulation, edges, traversed],
+  );
 
   const onDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
     if (!event.dataTransfer.types.includes(TEMPLATE_DRAG_MIME)) {
@@ -128,8 +165,8 @@ function GraphCanvas() {
   return (
     <div style={{ width: "100%", height: "100%", minHeight: 0 }}>
       <ReactFlow
-        nodes={nodes}
-        edges={edges}
+        nodes={displayNodes}
+        edges={displayEdges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
