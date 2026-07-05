@@ -389,7 +389,7 @@
   min-height: 0;
 }
 
-/* 층 표시/숨김 체크박스 바 */
+/* 3D 툴바 — 패트롤 데모 버튼 + 조작 힌트 (층 표시는 페이지 층 탭과 통합) */
 .space-viewer__floor-bar {
   display: flex;
   align-items: center;
@@ -397,18 +397,33 @@
   gap: 6px 14px;
 }
 
-.space-viewer__floor-label {
-  color: var(--color-text-subtle);
-  white-space: nowrap;
-}
-
-.space-viewer__floor-check {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
+/* 패트롤 데모 재생/정지 버튼 — 툴바 버튼(.spatial-page__topo-btn)과 동일 패턴 */
+.space-viewer__patrol-btn {
+  height: 30px;
+  padding: 0 10px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-control);
   color: var(--color-text-default);
   cursor: pointer;
   white-space: nowrap;
+}
+
+.space-viewer__patrol-btn:hover:not(:disabled) {
+  border-color: var(--color-border-focus);
+}
+
+.space-viewer__patrol-btn:disabled {
+  color: var(--color-text-disabled);
+  background: var(--color-bg-disabled);
+  cursor: not-allowed;
+}
+
+/* 재생 중 — 활성(brand) 강조 */
+.space-viewer__patrol-btn[aria-pressed="true"] {
+  background: var(--color-bg-brand-subtle);
+  border-color: var(--color-border-brand);
+  color: var(--color-text-brand);
 }
 
 /* 조작 힌트 — 우측 정렬 */

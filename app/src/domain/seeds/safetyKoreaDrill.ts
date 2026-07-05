@@ -36,6 +36,8 @@ const SAFETY_KOREA_DRILL_GRAPH: SOPGraph = {
         taskIds: ["seed-drill-task-1", "seed-drill-task-2"],
       },
       children: ["seed-drill-task-1", "seed-drill-task-2"],
+      // 자식 2개(추정 높이 ~110px)가 겹치지 않고 프레임 안에 들어가는 크기.
+      size: { width: 340, height: 310 },
     }),
     // 그룹 자식 — position은 부모(seed-drill-sop) 기준 상대좌표.
     seedNode("tpl-sop-task", "seed-drill-task-1", { x: 24, y: 56 }, {
@@ -47,7 +49,7 @@ const SAFETY_KOREA_DRILL_GRAPH: SOPGraph = {
         instructions: "지정 대피 경로로 인원을 운동장까지 유도한다.",
       },
     }),
-    seedNode("tpl-sop-task", "seed-drill-task-2", { x: 24, y: 136 }, {
+    seedNode("tpl-sop-task", "seed-drill-task-2", { x: 24, y: 176 }, {
       label: "취약인원 지원",
       properties: {
         title: "취약인원 지원",

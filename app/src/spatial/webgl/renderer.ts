@@ -5,7 +5,11 @@
  * 그려 반투명 공간 프리즘의 블렌딩이 자연스럽게 보이도록 한다.
  * 색은 전부 호출부(SpaceViewer3D)가 디자인 토큰에서 해석한 RGB [0..1]로 주입한다
  * — 이 모듈에는 색 리터럴이 없다. React에 의존하지 않는다.
+ * 동적 아이템(setDynamic/setDynamicModel): 로봇개 등 매 프레임 움직이는 메시는
+ * 버퍼 재업로드 대신 model 행렬 uniform만 갱신해 그린다(정적 장면은 항등 행렬).
  */
+
+import { mat4Identity } from "./mat4";
 
 /** RGB 각 채널 0..1 — 디자인 토큰 해석 결과. */
 export type Rgb = readonly [number, number, number];
@@ -39,6 +43,13 @@ interface UploadedItem {
 export interface Renderer {
   /** 장면 교체 — 기존 버퍼를 해제하고 새 아이템을 업로드한다. */
   setScene(items: SceneItem[]): void;
+  /**
+   * 동적 아이템 교체 — 정적 장면과 별도 버퍼로 업로드하고 setDynamicModel의
+   * model 행렬로 그린다(빈 배열이면 동적 렌더 없음). 솔리드는 불투명 취급.
+   */
+  setDynamic(items: SceneItem[]): void;
+  /** 동적 아이템 공용 model 행렬 갱신 — 버퍼 재업로드 없이 매 프레임 호출 가능. */
+  setDynamicModel(model: Float32Array): void;
   /** 캔버스 백킹 크기 변경 반영(viewport). */
   resize(width: number, height: number): void;
   /** 한 프레임 그리기 — viewProj = proj × view. */
@@ -47,15 +58,20 @@ export interface Renderer {
   dispose(): void;
 }
 
-/** 램버트 솔리드 정점 셰이더 — 월드 좌표가 이미 구워진 정점이라 model 행렬은 없다. */
+/**
+ * 램버트 솔리드 정점 셰이더 — 정적 장면은 월드 좌표가 구워진 정점(uModel=항등),
+ * 동적 아이템(로봇개)은 uModel로 이동/회전한다. 강체 변환 전제라 법선은
+ * uModel 상단 3×3만 적용한다(GLSL ES 1.00은 mat3(mat4) 생성자가 없어 열별 조립).
+ */
 const SOLID_VERTEX_SHADER = `
 attribute vec3 aPosition;
 attribute vec3 aNormal;
 uniform mat4 uViewProj;
+uniform mat4 uModel;
 varying vec3 vNormal;
 void main() {
-  vNormal = aNormal;
-  gl_Position = uViewProj * vec4(aPosition, 1.0);
+  vNormal = mat3(uModel[0].xyz, uModel[1].xyz, uModel[2].xyz) * aNormal;
+  gl_Position = uViewProj * uModel * vec4(aPosition, 1.0);
 }
 `;
 
@@ -173,6 +189,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer | null {
     position: gl.getAttribLocation(solidProgram, "aPosition"),
     normal: gl.getAttribLocation(solidProgram, "aNormal"),
     viewProj: gl.getUniformLocation(solidProgram, "uViewProj"),
+    model: gl.getUniformLocation(solidProgram, "uModel"),
     color: gl.getUniformLocation(solidProgram, "uColor"),
     alpha: gl.getUniformLocation(solidProgram, "uAlpha"),
     lightDir: gl.getUniformLocation(solidProgram, "uLightDir"),
@@ -192,16 +209,45 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer | null {
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
   let uploaded: UploadedItem[] = [];
+  // 동적 아이템(로봇개 등) — 정적 장면과 별도 버퍼, model 행렬로 매 프레임 이동
+  let dynamicUploaded: UploadedItem[] = [];
+  let dynamicModel: Float32Array = mat4Identity();
+  const IDENTITY_MODEL = mat4Identity();
 
-  /** 업로드된 버퍼를 전부 해제한다. */
-  const releaseBuffers = () => {
-    for (const entry of uploaded) {
+  /** 업로드 아이템 목록의 버퍼를 전부 해제한다. */
+  const releaseList = (entries: UploadedItem[]) => {
+    for (const entry of entries) {
       gl.deleteBuffer(entry.positionBuffer);
       if (entry.normalBuffer) {
         gl.deleteBuffer(entry.normalBuffer);
       }
     }
-    uploaded = [];
+  };
+
+  /** SceneItem 목록을 GPU 버퍼로 업로드한다 — setScene/setDynamic 공용. */
+  const uploadItems = (items: SceneItem[]): UploadedItem[] => {
+    const result: UploadedItem[] = [];
+    for (const item of items) {
+      if (item.positions.length === 0) {
+        continue;
+      }
+      const positionBuffer = uploadBuffer(gl, item.positions);
+      if (!positionBuffer) {
+        continue;
+      }
+      const normalBuffer = item.kind === "solid" ? uploadBuffer(gl, item.normals) : null;
+      if (item.kind === "solid" && !normalBuffer) {
+        gl.deleteBuffer(positionBuffer);
+        continue;
+      }
+      result.push({
+        item,
+        positionBuffer,
+        normalBuffer,
+        vertexCount: item.positions.length / 3,
+      });
+    }
+    return result;
   };
 
   /** 솔리드 아이템 1개 드로우 — 프로그램/uniform은 호출부에서 이미 바인드됨. */
@@ -222,27 +268,17 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer | null {
 
   return {
     setScene(items) {
-      releaseBuffers();
-      for (const item of items) {
-        if (item.positions.length === 0) {
-          continue;
-        }
-        const positionBuffer = uploadBuffer(gl, item.positions);
-        if (!positionBuffer) {
-          continue;
-        }
-        const normalBuffer = item.kind === "solid" ? uploadBuffer(gl, item.normals) : null;
-        if (item.kind === "solid" && !normalBuffer) {
-          gl.deleteBuffer(positionBuffer);
-          continue;
-        }
-        uploaded.push({
-          item,
-          positionBuffer,
-          normalBuffer,
-          vertexCount: item.positions.length / 3,
-        });
-      }
+      releaseList(uploaded);
+      uploaded = uploadItems(items);
+    },
+
+    setDynamic(items) {
+      releaseList(dynamicUploaded);
+      dynamicUploaded = uploadItems(items);
+    },
+
+    setDynamicModel(model) {
+      dynamicModel = model;
     },
 
     resize(width, height) {
@@ -261,14 +297,20 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer | null {
       );
       const lines = uploaded.filter((entry) => entry.item.kind === "lines");
 
-      // 1) 불투명 솔리드 — depth write 켠 상태
+      // 1) 불투명 솔리드 — depth write 켠 상태 (정적=항등 model, 동적=dynamicModel)
       gl.useProgram(solidProgram);
       gl.uniformMatrix4fv(solidLocations.viewProj, false, viewProj);
       gl.uniform3fv(solidLocations.lightDir, [...LIGHT_DIRECTION]);
       gl.enableVertexAttribArray(solidLocations.position);
       gl.enableVertexAttribArray(solidLocations.normal);
       gl.depthMask(true);
+      gl.uniformMatrix4fv(solidLocations.model, false, IDENTITY_MODEL);
       for (const entry of opaqueSolids) {
+        drawSolid(entry);
+      }
+      // 동적 솔리드(로봇개) — 불투명 취급, model 행렬만 다르게 적용
+      gl.uniformMatrix4fv(solidLocations.model, false, dynamicModel);
+      for (const entry of dynamicUploaded) {
         drawSolid(entry);
       }
       gl.disableVertexAttribArray(solidLocations.normal);
@@ -289,11 +331,12 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer | null {
       }
       gl.disableVertexAttribArray(lineLocations.position);
 
-      // 3) 반투명 솔리드 — depth write 끔(정렬 없이도 무난한 근사).
+      // 3) 반투명 솔리드 — depth write 끔(정렬 없이도 무난한 근사). 정적이라 항등 model.
       // attribute enable 상태는 프로그램이 아닌 전역이라 라인 패스 후 다시 켠다.
       gl.useProgram(solidProgram);
       gl.enableVertexAttribArray(solidLocations.position);
       gl.enableVertexAttribArray(solidLocations.normal);
+      gl.uniformMatrix4fv(solidLocations.model, false, IDENTITY_MODEL);
       gl.depthMask(false);
       for (const entry of transparentSolids) {
         drawSolid(entry);
@@ -304,7 +347,10 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer | null {
     },
 
     dispose() {
-      releaseBuffers();
+      releaseList(uploaded);
+      uploaded = [];
+      releaseList(dynamicUploaded);
+      dynamicUploaded = [];
       gl.deleteProgram(solidProgram);
       gl.deleteProgram(lineProgram);
     },

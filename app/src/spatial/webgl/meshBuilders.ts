@@ -130,6 +130,59 @@ export function buildNodeMarker(center: Vec3, radius: number): SolidMesh {
   return { positions: new Float32Array(positions), normals: new Float32Array(normals) };
 }
 
+/** 축 정렬 박스 1개를 위치/법선 배열에 추가한다 — 6면 × 2삼각형, 면 단위 법선. */
+function pushBox(
+  positions: number[],
+  normals: number[],
+  center: Vec3,
+  size: Vec3,
+): void {
+  const [cx, cy, cz] = center;
+  const [hx, hy, hz] = [size[0] / 2, size[1] / 2, size[2] / 2];
+  // 면 정의 — [법선, 사각형 네 꼭짓점(법선 기준 CCW)]
+  const faces: Array<[Vec3, Vec3, Vec3, Vec3, Vec3]> = [
+    // +X / −X
+    [[1, 0, 0], [cx + hx, cy - hy, cz - hz], [cx + hx, cy + hy, cz - hz], [cx + hx, cy + hy, cz + hz], [cx + hx, cy - hy, cz + hz]],
+    [[-1, 0, 0], [cx - hx, cy - hy, cz + hz], [cx - hx, cy + hy, cz + hz], [cx - hx, cy + hy, cz - hz], [cx - hx, cy - hy, cz - hz]],
+    // +Y / −Y
+    [[0, 1, 0], [cx - hx, cy + hy, cz - hz], [cx - hx, cy + hy, cz + hz], [cx + hx, cy + hy, cz + hz], [cx + hx, cy + hy, cz - hz]],
+    [[0, -1, 0], [cx - hx, cy - hy, cz + hz], [cx - hx, cy - hy, cz - hz], [cx + hx, cy - hy, cz - hz], [cx + hx, cy - hy, cz + hz]],
+    // +Z / −Z
+    [[0, 0, 1], [cx - hx, cy - hy, cz + hz], [cx + hx, cy - hy, cz + hz], [cx + hx, cy + hy, cz + hz], [cx - hx, cy + hy, cz + hz]],
+    [[0, 0, -1], [cx + hx, cy - hy, cz - hz], [cx - hx, cy - hy, cz - hz], [cx - hx, cy + hy, cz - hz], [cx + hx, cy + hy, cz - hz]],
+  ];
+  for (const [normal, a, b, c, d] of faces) {
+    pushTriangle(positions, normals, a, b, c, normal);
+    pushTriangle(positions, normals, a, c, d, normal);
+  }
+}
+
+/**
+ * 로봇개 메시 — 박스 조합 로우폴리(몸통 + 머리 + 다리 4 + 꼬리, 총 길이 ~0.8m).
+ * 원점 기준: 발바닥 y=0(노드 위치에 얹힘), forward = +X — 이동 방향 yaw는
+ * patrolPath.samplePatrolPose(atan2(−dz, dx))와 mat4RotateY 규약에 맞춘다.
+ * 색은 렌더 아이템 색(디자인 토큰 해석 RGB)으로 호출부가 공급한다.
+ */
+export function buildRobotDog(): SolidMesh {
+  const positions: number[] = [];
+  const normals: number[] = [];
+  // 몸통 — X축 길이 방향
+  pushBox(positions, normals, [0, 0.42, 0], [0.52, 0.2, 0.24]);
+  // 머리 — 전방(+X) 위쪽
+  pushBox(positions, normals, [0.33, 0.56, 0], [0.18, 0.16, 0.16]);
+  // 주둥이 — 머리 앞 작은 박스(방향 식별용)
+  pushBox(positions, normals, [0.45, 0.52, 0], [0.08, 0.06, 0.08]);
+  // 다리 4개 — 발바닥 y=0
+  for (const legX of [0.18, -0.18]) {
+    for (const legZ of [0.09, -0.09]) {
+      pushBox(positions, normals, [legX, 0.16, legZ], [0.07, 0.32, 0.07]);
+    }
+  }
+  // 꼬리 — 후방(−X) 위쪽
+  pushBox(positions, normals, [-0.32, 0.55, 0], [0.14, 0.05, 0.05]);
+  return { positions: new Float32Array(positions), normals: new Float32Array(normals) };
+}
+
 /**
  * 링크 선분 — 월드 좌표 끝점 쌍 목록을 GL_LINES 정점 배열로 직렬화한다.
  * 층간(수직) 링크도 끝점 y가 다른 선분으로 자연히 표현된다.

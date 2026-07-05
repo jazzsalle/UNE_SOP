@@ -4,8 +4,8 @@
  * React Flow는 시각 편집기 레이어일 뿐이다. 제품 데이터 모델(SOPGraph)과는
  * 이후 normalizeGraph() 단계에서 분리·변환된다. (Phase 4)
  *
- * 담당: 팔레트 드롭 생성(그룹 자식 배치 포함), 타입드 포트 연결 검증,
- * MiniMap/Controls/Background, Delete/Backspace 삭제.
+ * 담당: 팔레트 드롭 생성(그룹 자식 배치 포함), 노드 드래그 종료 시 그룹 탈착/부착,
+ * 타입드 포트 연결 검증, MiniMap/Controls/Background, Delete/Backspace 삭제.
  */
 import { useCallback, useMemo, type DragEvent } from "react";
 import {
@@ -15,54 +15,17 @@ import {
   MiniMap,
   ReactFlow,
   useReactFlow,
-  type XYPosition,
+  type OnNodeDrag,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { getTemplate } from "../../domain";
 import { TEMPLATE_DRAG_MIME, type StudioNode } from "../state/editorTypes";
 import { useStudio } from "../state/GraphStudioContext";
+import { findExpandedGroupAt } from "../state/dragReparent";
 import { nodeTypes } from "./nodes/nodeTypes";
 import { accentTokenForNodeType } from "./nodes/SOPNode";
 import { defaultEdgeOptions } from "./edgeOptions";
 import "./canvas.css";
-
-/** 노드의 렌더 크기 — 측정값(measured) 우선, 없으면 style의 숫자 값 폴백. */
-function nodeSize(node: StudioNode): { width: number; height: number } {
-  const styleWidth =
-    typeof node.style?.width === "number" ? node.style.width : 0;
-  const styleHeight =
-    typeof node.style?.height === "number" ? node.style.height : 0;
-  return {
-    width: node.measured?.width ?? styleWidth,
-    height: node.measured?.height ?? styleHeight,
-  };
-}
-
-/**
- * 드롭 좌표(flow 좌표계)를 포함하는 펼쳐진 SOP Group 프레임을 찾는다.
- * 겹칠 경우 배열 뒤쪽(위에 그려지는) 그룹을 우선한다. 없으면 null.
- */
-function findExpandedGroupAt(
-  nodes: StudioNode[],
-  point: XYPosition,
-): StudioNode | null {
-  for (let i = nodes.length - 1; i >= 0; i -= 1) {
-    const node = nodes[i];
-    if (node.type !== "sopGroup" || node.data.graphNode.collapsed) {
-      continue;
-    }
-    const { width, height } = nodeSize(node);
-    if (
-      point.x >= node.position.x &&
-      point.x <= node.position.x + width &&
-      point.y >= node.position.y &&
-      point.y <= node.position.y + height
-    ) {
-      return node;
-    }
-  }
-  return null;
-}
 
 /** MiniMap 노드 색 — 노드 타입의 accent 토큰을 var() 문자열로 반환. */
 function minimapNodeColor(node: StudioNode): string {
@@ -78,6 +41,7 @@ function GraphCanvas() {
     onConnect,
     isValidConnection,
     addNodeFromTemplate,
+    reparentNodeAfterDrag,
     simulation,
   } = useStudio();
   const { screenToFlowPosition } = useReactFlow();
@@ -162,6 +126,15 @@ function GraphCanvas() {
     [nodes, addNodeFromTemplate, screenToFlowPosition],
   );
 
+  // 드래그 종료 시 그룹 탈착/부착 — 자식을 프레임 밖에 놓으면 detach,
+  // 독립 sop_task를 펼쳐진 그룹 위에 놓으면 attach (판정은 dragReparent가 담당).
+  const onNodeDragStop = useCallback<OnNodeDrag<StudioNode>>(
+    (_event, node) => {
+      reparentNodeAfterDrag(node.id);
+    },
+    [reparentNodeAfterDrag],
+  );
+
   return (
     <div style={{ width: "100%", height: "100%", minHeight: 0 }}>
       <ReactFlow
@@ -175,6 +148,7 @@ function GraphCanvas() {
         defaultEdgeOptions={defaultEdgeOptions}
         onDragOver={onDragOver}
         onDrop={onDrop}
+        onNodeDragStop={onNodeDragStop}
         deleteKeyCode={["Delete", "Backspace"]}
         fitView
         proOptions={{ hideAttribution: true }}

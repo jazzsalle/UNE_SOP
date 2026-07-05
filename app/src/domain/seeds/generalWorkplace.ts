@@ -39,6 +39,8 @@ const GENERAL_WORKPLACE_GRAPH: SOPGraph = {
         taskIds: ["seed-gw-task-1", "seed-gw-task-2"],
       },
       children: ["seed-gw-task-1", "seed-gw-task-2"],
+      // 자식 2개(추정 높이 ~110px)가 겹치지 않고 프레임 안에 들어가는 크기.
+      size: { width: 340, height: 310 },
     }),
     // 그룹 자식 — position은 부모(seed-gw-sop) 기준 상대좌표.
     seedNode("tpl-sop-task", "seed-gw-task-1", { x: 24, y: 56 }, {
@@ -50,7 +52,7 @@ const GENERAL_WORKPLACE_GRAPH: SOPGraph = {
         instructions: "쓰러진 작업자의 의식·호흡을 확인하고 응급처치를 시행한다.",
       },
     }),
-    seedNode("tpl-sop-task", "seed-gw-task-2", { x: 24, y: 136 }, {
+    seedNode("tpl-sop-task", "seed-gw-task-2", { x: 24, y: 176 }, {
       label: "작업중지",
       properties: {
         title: "작업중지",

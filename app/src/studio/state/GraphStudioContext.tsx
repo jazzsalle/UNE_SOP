@@ -43,6 +43,7 @@ import type { StudioEdge, StudioNode } from "./editorTypes";
 import { checkConnection } from "./portCompatibility";
 import { EDGE_COLOR_TOKEN } from "./flowTokens";
 import { applyGroupCollapse } from "./groupCollapse";
+import { resolveDragReparent } from "./dragReparent";
 import { toEditorSnapshot, toStudioGraph } from "./graphIO";
 
 /**
@@ -76,6 +77,12 @@ export interface GraphStudioApi {
   updateNodeProperty: (nodeId: string, key: string, value: unknown) => void;
   /** SOP Group 접기/펼치기 토글 — 자식 노드·엣지 hidden 동기화 포함. */
   toggleGroupCollapse: (groupId: string) => void;
+  /**
+   * 노드 드래그 종료 시 그룹 탈착/부착 판정(dragReparent.resolveDragReparent) 적용.
+   * 자식을 프레임 밖에 놓으면 detach(절대좌표 전환), 독립 sop_task를 펼쳐진
+   * 그룹 위에 놓으면 attach(상대좌표 전환). GraphCanvas onNodeDragStop이 호출한다.
+   */
+  reparentNodeAfterDrag: (nodeId: string) => void;
   /** parentId === groupId인 자식 노드들의 도메인 GraphNode 목록. */
   getGroupChildren: (groupId: string) => GraphNode[];
 
@@ -191,9 +198,10 @@ export function GraphStudioProvider({ children }: { children: ReactNode }) {
           height: template.defaultSize.height,
         };
       }
+      // extent:"parent"는 지정하지 않는다 — 자식을 프레임 밖으로 드래그해
+      // 분리(detach)할 수 있어야 하기 때문 (reparentNodeAfterDrag 참조).
       if (parentGroupId && template.nodeType === "sop_task") {
         node.parentId = parentGroupId;
-        node.extent = "parent";
       }
       // RF 규칙: 부모(그룹) 노드는 배열에서 자식보다 앞에 있어야 하므로 append 순서 유지.
       setNodes((prev) => [...prev, node]);
@@ -252,6 +260,14 @@ export function GraphStudioProvider({ children }: { children: ReactNode }) {
       setEdges(next.edges);
     },
     [nodes, edges, setNodes, setEdges],
+  );
+
+  const reparentNodeAfterDrag = useCallback(
+    (nodeId: string) => {
+      // 변화 없으면(null) 기존 배열 유지 — 불필요한 리렌더 방지.
+      setNodes((prev) => resolveDragReparent(prev, nodeId) ?? prev);
+    },
+    [setNodes],
   );
 
   const getGroupChildren = useCallback(
@@ -355,6 +371,7 @@ export function GraphStudioProvider({ children }: { children: ReactNode }) {
       updateNodeDescription,
       updateNodeProperty,
       toggleGroupCollapse,
+      reparentNodeAfterDrag,
       getGroupChildren,
       graphMeta,
       updateGraphMeta,
@@ -383,6 +400,7 @@ export function GraphStudioProvider({ children }: { children: ReactNode }) {
       updateNodeDescription,
       updateNodeProperty,
       toggleGroupCollapse,
+      reparentNodeAfterDrag,
       getGroupChildren,
       graphMeta,
       updateGraphMeta,

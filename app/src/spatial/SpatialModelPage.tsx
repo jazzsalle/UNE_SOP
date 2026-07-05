@@ -6,6 +6,9 @@
  * FloorPlanSvg에 겹쳐 그리고, webbuilder export JSON 임포트(TopologyImportDialog)를 지원한다.
  * Phase 9(T5): "2D 평면 | 3D 뷰" 토글 — 3D 모드는 SpaceViewer3D(순수 WebGL)로 전환하고,
  * subscribeTopologySets 구독으로 시나리오 실행기가 생성한 셋도 셀렉트에 즉시 반영한다.
+ * 층 탭은 2D/3D 공용 — 3D 모드에서는 선택 층만 렌더하고, 3D 전용 "전체 건물" 탭을
+ * 층 탭 행에 추가해 전 층(explode)을 본다. 2D는 층 평면 개념이라 전체 탭이 없으며
+ * 2D로 전환하면 기존 floorCode 층 탭 동작으로 자연 복귀한다(단순한 쪽 선택).
  * 데이터는 정적 레지스트리 조회 전용 — SOPGraph/React Flow 편집 상태와 무관하다.
  */
 import { useEffect, useMemo, useState } from "react";
@@ -101,6 +104,8 @@ function SpatialModelPage() {
   const [topoVersion, setTopoVersion] = useState(0);
   // 평면(2D)/입체(3D) 뷰 모드 — 3D는 SpaceViewer3D(순수 WebGL) 렌더
   const [viewMode, setViewMode] = useState<"2d" | "3d">("2d");
+  // 3D 전용 "전체 건물" 모드 — true면 전 층 explode 렌더(2D에서는 무시됨)
+  const [wholeBuilding, setWholeBuilding] = useState(false);
 
   // 레지스트리 구독 — 시나리오 실행기(registerGeneratedSet) 등 외부 변경도 즉시 반영 (Phase 9)
   useEffect(
@@ -139,15 +144,17 @@ function SpatialModelPage() {
     setSiteUfid(ufid);
     setFloorCode(getFloors(ufid)[0]?.floorCode ?? "");
     setSelection(null);
+    setWholeBuilding(false);
     if (!setsForSite(ufid).some((set) => set.setId === topologySetId)) {
       setTopologySetId("");
     }
   };
 
-  /** 층 변경 — 선택을 해제한다. */
+  /** 층 변경 — 선택을 해제하고 전체 건물 모드도 벗어난다(단일 층 3D 필터). */
   const handleFloorChange = (code: string) => {
     setFloorCode(code);
     setSelection(null);
+    setWholeBuilding(false);
   };
 
   /** 토폴로지 셋 변경 — 이전 셋의 노드 선택은 무효라 topology 선택만 해제한다. */
@@ -209,10 +216,12 @@ function SpatialModelPage() {
           ))}
         </select>
 
-        {/* 층 탭 — 선택 사이트의 FLOOR 코드 목록 */}
+        {/* 층 탭 — 선택 사이트의 FLOOR 코드 목록. 3D 모드에서는 선택 층만 렌더하며,
+            전 층을 explode로 보는 3D 전용 "전체 건물" 탭이 추가된다 */}
         <div className="spatial-page__floor-tabs" role="tablist" aria-label="층 선택">
           {floors.map((floor) => {
-            const active = floor.floorCode === floorCode;
+            const active =
+              floor.floorCode === floorCode && !(viewMode === "3d" && wholeBuilding);
             return (
               <button
                 key={floor.floorCode}
@@ -228,6 +237,19 @@ function SpatialModelPage() {
               </button>
             );
           })}
+          {viewMode === "3d" && (
+            <button
+              type="button"
+              role="tab"
+              aria-selected={wholeBuilding}
+              className={`spatial-page__floor-tab typo-text-md${
+                wholeBuilding ? " spatial-page__floor-tab--active font-bold" : ""
+              }`}
+              onClick={() => setWholeBuilding(true)}
+            >
+              전체 건물
+            </button>
+          )}
         </div>
 
         {/* 2D 평면 | 3D 뷰 토글 (Phase 9 T5) — 3D는 순수 WebGL SpaceViewer3D */}
@@ -333,12 +355,21 @@ function SpatialModelPage() {
             <>
               <p className="spatial-page__plan-note typo-text-sm">
                 {site
-                  ? `${site.name} · 3D 뷰${
+                  ? `${site.name} · 3D 뷰 (${
+                      wholeBuilding
+                        ? "전체 건물"
+                        : floors.find((floor) => floor.floorCode === floorCode)?.name ??
+                          floorCode
+                    })${
                       selectedTopologySet ? ` · 토폴로지 「${selectedTopologySet.name}」` : ""
                     } — 층 슬래브/공간 프리즘/시설물·토폴로지 마커를 입체로 점검하세요`
                   : "등록된 사이트가 없습니다"}
               </p>
-              <SpaceViewer3D siteUfid={siteUfid} topologySetId={topologySetId || null} />
+              <SpaceViewer3D
+                siteUfid={siteUfid}
+                topologySetId={topologySetId || null}
+                floorCode={wholeBuilding ? null : floorCode}
+              />
             </>
           )}
         </div>

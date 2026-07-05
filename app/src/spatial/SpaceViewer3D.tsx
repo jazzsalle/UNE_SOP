@@ -3,17 +3,27 @@
  * 층 슬래브·공간 프리즘(division 색, 반투명)·시설물 마커·토폴로지 노드/링크를
  * webgl/ 모듈(mat4·orbitCamera·meshBuilders·renderer — React 무의존)로 그린다.
  * 좌표계: world.x = plan.x, world.z = −plan.y, world.y = 고도(m) — 토폴로지
- * worldPosition과 동일 공간. 층 표시/숨김 체크박스는 이 컴포넌트가 내부 관리한다
- * (2D 층 탭과 독립 — 3D는 여러 층 동시 표시가 기본이라 페이지 상태와 분리가 단순).
+ * worldPosition과 동일 공간. 층 표시는 페이지 층 탭과 통합 — props.floorCode가
+ * 단일 층이면 그 층의 슬래브/프리즘/시설물/토폴로지(floorName 일치)만 그리고,
+ * null(전체 건물)이면 전 층을 층 간 explode 오프셋(FLOOR_GAP)을 벌려 그린다
+ * — 위층 슬래브/프리즘 바닥과 아래층 프리즘 상단의 z-fighting 해소.
+ * 패트롤 데모: 로봇개 메시가 최신 실행이력의 patrol 경로(없으면 자동 선정 경로)를
+ * 따라 이동한다 — renderer 동적 model 행렬로 매 프레임 버퍼 재업로드 없이 갱신.
  * 색은 전부 getComputedStyle로 디자인 토큰 CSS 변수를 해석해 RGB로 변환한다
  * — division→토큰 매핑은 spatial.css `.spatial-division--*`와 동일하게 유지할 것.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getFacilities, getFloors, getSpaces } from "../domain/spatial";
 import type { SpatialDivision } from "../domain/spatial";
-import { deriveLinks, getTopologySet } from "../domain/topology";
+import {
+  deriveLinks,
+  findPath,
+  getTopologySet,
+  pickPatrolEndpoints,
+} from "../domain/topology";
+import { listRuns, subscribeRuns } from "../engine/runStorage";
 import type { Vec3 } from "./webgl/mat4";
-import { mat4Multiply, mat4Perspective } from "./webgl/mat4";
+import { mat4Multiply, mat4Perspective, mat4RotateY, mat4Translate } from "./webgl/mat4";
 import {
   cameraViewMatrix,
   createOrbitCamera,
@@ -27,9 +37,16 @@ import {
   buildLinkLines,
   buildNodeMarker,
   buildPrism,
+  buildRobotDog,
   planToWorld,
   type PlanBounds,
 } from "./webgl/meshBuilders";
+import {
+  buildPatrolTimeline,
+  samplePatrolPose,
+  type PatrolTimeline,
+  type PatrolWaypoint,
+} from "./webgl/patrolPath";
 import { createRenderer, type Renderer, type Rgb, type SceneItem } from "./webgl/renderer";
 
 interface SpaceViewer3DProps {
@@ -37,6 +54,8 @@ interface SpaceViewer3DProps {
   siteUfid: string;
   /** 함께 그릴 토폴로지 셋 id — 없거나 미등록이면 공간만 렌더. */
   topologySetId?: string | null;
+  /** 표시 층 FLOOR 코드 — null이면 전체 건물(전 층 + explode 오프셋). */
+  floorCode: string | null;
 }
 
 /** 수직 화각(라디안) — 투영·pan 스케일 공용. */
@@ -61,6 +80,15 @@ const SLAB_THICKNESS = 0.15;
 /** 토폴로지 노드/시설물 마커 옥타헤드론 반지름(m). */
 const NODE_MARKER_RADIUS = 0.45;
 const FACILITY_MARKER_RADIUS = 0.35;
+
+/**
+ * 전체 건물 모드의 층 간 explode 간격(m) — 층 인덱스(고도 오름차순)마다 누적해
+ * 공간 프리즘 상단과 위층 슬래브 바닥의 coplanar 면(z-fighting)을 벌린다.
+ */
+const FLOOR_GAP = 1.8;
+
+/** 공간 프리즘 높이 축소(m) — explode 후에도 남는 coplanar 면 방어. */
+const PRISM_HEIGHT_EPSILON = 0.05;
 
 /* ── 디자인 토큰 색 해석 ─────────────────────────────────────── */
 
@@ -154,22 +182,30 @@ const NODE_TYPE_TOKEN: Record<string, string> = {
   exit: "--color-bg-danger",
 };
 
+/** 로봇개 몸체색 토큰 — accent(brand) 계열로 토폴로지 마커(info/warning/danger)와 구분. */
+const ROBOT_DOG_TOKEN = "--color-bg-brand";
+
 /* ── 장면 조립 ───────────────────────────────────────────────── */
 
 /**
  * 현재 사이트/토폴로지/표시 층으로 장면 아이템을 조립한다.
- * 토폴로지는 층 필터와 무관하게 셋 전체를 렌더한다 — 수직(층간) 링크가 항상
- * 온전히 보이고 필터 조합 분기가 없는 단순한 쪽을 택했다(계획 명세 허용).
+ * - visibleFloorCodes에 속한 층만 렌더 — 단일 층 모드는 해당 층 하나,
+ *   전체 건물 모드는 전 층. 토폴로지 노드는 floorName, 링크는 양끝 층으로 필터.
+ * - floorOffsets(층 코드 → Y 오프셋)는 전체 건물 모드의 explode 간격 —
+ *   슬래브/프리즘/시설물/토폴로지 노드·링크 끝점 모두 소속 층 기준으로 동일 적용.
+ *   수직 링크는 벌어진 간격을 그대로 이어 층간 연결이 시각적으로 명확해진다.
  */
 function buildSceneItems(
   siteUfid: string,
   topologySetId: string | null | undefined,
-  visibleFloorCodes: Set<string>,
+  visibleFloorCodes: ReadonlySet<string>,
+  floorOffsets: ReadonlyMap<string, number>,
 ): SceneItem[] {
   const styles = getComputedStyle(document.documentElement);
   const slabColor = resolveToken(styles, "--color-border-subtle");
   const linkColor = resolveToken(styles, "--color-border-strong");
   const items: SceneItem[] = [];
+  const offsetOf = (floorCode: string) => floorOffsets.get(floorCode) ?? 0;
 
   const spaces = getSpaces(siteUfid).filter((space) => visibleFloorCodes.has(space.floorCode));
   const floorOfSpace = new Map(spaces.map((space) => [space.primaryKey, space.floorCode]));
@@ -186,16 +222,17 @@ function buildSceneItems(
       maxX: Math.max(...points.map((p) => p.x)),
       maxY: Math.max(...points.map((p) => p.y)),
     };
-    const slab = buildFloorSlab(bounds, floor.elevation, SLAB_THICKNESS);
+    const slab = buildFloorSlab(bounds, floor.elevation + offsetOf(floor.floorCode), SLAB_THICKNESS);
     items.push({ kind: "solid", ...slab, color: slabColor, alpha: 1 });
   }
 
-  // 공간 프리즘 — division 채움 토큰색, 반투명
+  // 공간 프리즘 — division 채움 토큰색, 반투명.
+  // 높이를 살짝 줄여(ε) 위층 슬래브 바닥과의 coplanar 면을 제거한다(z-fighting 방어).
   for (const space of spaces) {
     const prism = buildPrism(
       space.geometry.footprint,
-      space.geometry.baseElevation,
-      space.geometry.height,
+      space.geometry.baseElevation + offsetOf(space.floorCode),
+      Math.max(space.geometry.height - PRISM_HEIGHT_EPSILON, PRISM_HEIGHT_EPSILON),
     );
     items.push({
       kind: "solid",
@@ -207,10 +244,11 @@ function buildSceneItems(
 
   // 시설물 마커 — 소속 공간이 표시 층일 때만. position.z는 절대 고도(m)
   for (const facility of getFacilities(siteUfid)) {
-    if (!floorOfSpace.has(facility.spaceId)) continue;
+    const facilityFloor = floorOfSpace.get(facility.spaceId);
+    if (facilityFloor === undefined) continue;
     const center = planToWorld(
       { x: facility.position.x, y: facility.position.y },
-      facility.position.z,
+      facility.position.z + offsetOf(facilityFloor),
     );
     const marker = buildNodeMarker(center, FACILITY_MARKER_RADIUS);
     items.push({
@@ -221,27 +259,39 @@ function buildSceneItems(
     });
   }
 
-  // 토폴로지 노드/링크 — worldPosition을 그대로 사용(동일 좌표 공간)
+  // 토폴로지 노드/링크 — worldPosition(동일 좌표 공간) + 소속 층(floorName) 오프셋.
+  // 단일 층 모드에서는 floorName 일치 노드와 양끝이 그 층인 링크만 남긴다.
   const topologySet = topologySetId ? getTopologySet(topologySetId) : null;
   if (topologySet) {
-    const nodeById = new Map(topologySet.nodes.map((node) => [node.id, node]));
+    const visibleNodes = topologySet.nodes.filter((node) =>
+      visibleFloorCodes.has(node.floorName),
+    );
+    const nodeById = new Map(visibleNodes.map((node) => [node.id, node]));
     const segments: Array<[Vec3, Vec3]> = [];
     for (const link of deriveLinks(topologySet.nodes)) {
       const source = nodeById.get(link.sourceId);
       const target = nodeById.get(link.targetId);
-      if (!source || !target) continue;
+      if (!source || !target) continue; // 한쪽이라도 비표시 층이면 생략
       segments.push([
-        [source.worldPosition.x, source.worldPosition.y, source.worldPosition.z],
-        [target.worldPosition.x, target.worldPosition.y, target.worldPosition.z],
+        [
+          source.worldPosition.x,
+          source.worldPosition.y + offsetOf(source.floorName),
+          source.worldPosition.z,
+        ],
+        [
+          target.worldPosition.x,
+          target.worldPosition.y + offsetOf(target.floorName),
+          target.worldPosition.z,
+        ],
       ]);
     }
     if (segments.length > 0) {
       items.push({ kind: "lines", positions: buildLinkLines(segments), color: linkColor, alpha: 1 });
     }
-    for (const node of topologySet.nodes) {
+    for (const node of visibleNodes) {
       const token = NODE_TYPE_TOKEN[node.nodeTypeCode] ?? NODE_TYPE_TOKEN["normal"];
       const marker = buildNodeMarker(
-        [node.worldPosition.x, node.worldPosition.y, node.worldPosition.z],
+        [node.worldPosition.x, node.worldPosition.y + offsetOf(node.floorName), node.worldPosition.z],
         NODE_MARKER_RADIUS,
       );
       items.push({ kind: "solid", ...marker, color: resolveToken(styles, token), alpha: 1 });
@@ -254,7 +304,8 @@ function buildSceneItems(
 /**
  * 사이트 전체가 화면에 들어오는 초기 카메라 — 전 층 footprint/고도 바운딩 박스
  * 중심을 target으로, 최대 변 길이에 비례한 distance와 내려다보는 pitch를 잡는다
- * (검증용 건물 40m×20m×3층 기준 건물 전체가 보인다).
+ * (검증용 건물 40m×20m×3층 기준 건물 전체가 보인다 — explode 추가분은
+ * FLOOR_GAP×층수 수 m 수준이라 여유 distance 안에 들어온다).
  */
 function fitCamera(siteUfid: string): OrbitCameraState {
   const spaces = getSpaces(siteUfid);
@@ -280,14 +331,62 @@ function fitCamera(siteUfid: string): OrbitCameraState {
   };
 }
 
+/* ── 패트롤 경로 해석 ────────────────────────────────────────── */
+
+/** 패트롤 경로 소스 — 노드 id 체인 + 체크포인트 id 목록. */
+interface PatrolRoute {
+  routeNodeIds: string[];
+  checkpointNodeIds: string[];
+}
+
+/**
+ * 패트롤 데모 경로를 해석한다 — 우선순위:
+ * ① 실행이력(listRuns, 최신 우선 정렬)에서 선택 셋의 patrol 임무가 있는 최신 run의
+ *    mission.patrol.routeNodeIds (SOP 실행 연동 — subscribeRuns로 갱신)
+ * ② 없으면 pickPatrolEndpoints + findPath로 셋 안에서 자동 선정한 폴백 경로.
+ * 셋 미선택/미등록/경로 불가면 null(데모 버튼 비활성).
+ */
+function resolvePatrolRoute(topologySetId: string | null | undefined): PatrolRoute | null {
+  if (!topologySetId) return null;
+  const set = getTopologySet(topologySetId);
+  if (!set) return null;
+
+  for (const run of listRuns()) {
+    for (const mission of run.missions) {
+      const patrol = mission.patrol;
+      if (patrol && patrol.topologySetId === topologySetId && patrol.routeNodeIds.length >= 2) {
+        return {
+          routeNodeIds: patrol.routeNodeIds,
+          checkpointNodeIds: patrol.checkpointNodeIds,
+        };
+      }
+    }
+  }
+
+  const endpoints = pickPatrolEndpoints(set);
+  if (!endpoints) return null;
+  const path = findPath(set, endpoints.startNodeId, endpoints.endNodeId);
+  if (!path || path.nodeIds.length < 2) return null;
+  return { routeNodeIds: path.nodeIds, checkpointNodeIds: endpoints.checkpointNodeIds };
+}
+
+/** rAF 루프가 참조하는 패트롤 재생 상태 — 경유점/타임라인/재생 시작 시각(ms). */
+interface PatrolPlayback {
+  waypoints: PatrolWaypoint[];
+  timeline: PatrolTimeline;
+  startMs: number;
+}
+
 /* ── 컴포넌트 ───────────────────────────────────────────────── */
 
-function SpaceViewer3D({ siteUfid, topologySetId }: SpaceViewer3DProps) {
+function SpaceViewer3D({ siteUfid, topologySetId, floorCode }: SpaceViewer3DProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rendererRef = useRef<Renderer | null>(null);
   const cameraRef = useRef<OrbitCameraState>(createOrbitCamera(fitCamera(siteUfid)));
-  // dirty 플래그 — 카메라/장면/크기 변경 시에만 rAF 루프가 draw한다
+  // dirty 플래그 — 카메라/장면/크기 변경 시에만 rAF 루프가 draw한다(재생 중엔 상시 dirty)
   const dirtyRef = useRef(true);
+  // 패트롤 재생 상태 — rAF 루프가 매 프레임 참조(재생 중이 아니면 null)
+  const playbackRef = useRef<PatrolPlayback | null>(null);
 
   // WebGL 미지원(컨텍스트/셰이더 생성 실패) 여부
   const [unsupported, setUnsupported] = useState(false);
@@ -295,17 +394,67 @@ function SpaceViewer3D({ siteUfid, topologySetId }: SpaceViewer3DProps) {
   const [contextLost, setContextLost] = useState(false);
   // 컨텍스트 복원 세대 — 장면 재업로드 트리거
   const [restoreGeneration, setRestoreGeneration] = useState(0);
-  // 숨긴 층 FLOOR 코드 집합 — 기본 전 층 표시, 사이트 변경 시 리셋
-  const [hiddenFloorCodes, setHiddenFloorCodes] = useState<ReadonlySet<string>>(new Set());
+  // 패트롤 데모 재생 여부
+  const [patrolPlaying, setPatrolPlaying] = useState(false);
+  // 실행이력 변경 세대 — patrol 경로(run 소스) 재해석 트리거
+  const [runsVersion, setRunsVersion] = useState(0);
 
   const floors = useMemo(() => getFloors(siteUfid), [siteUfid]);
+
+  // 표시 층 집합 — floorCode null(전체 건물)이면 전 층, 아니면 해당 층 하나
   const visibleFloorCodes = useMemo(
     () =>
-      new Set(
-        floors.map((floor) => floor.floorCode).filter((code) => !hiddenFloorCodes.has(code)),
-      ),
-    [floors, hiddenFloorCodes],
+      floorCode === null
+        ? new Set(floors.map((floor) => floor.floorCode))
+        : new Set([floorCode]),
+    [floors, floorCode],
   );
+
+  // explode 오프셋 — 전체 건물 모드에서만 층 인덱스(고도 오름차순) × FLOOR_GAP.
+  // 단일 층 모드는 빈 맵(오프셋 0) — 겹치는 층이 없어 explode 불필요.
+  const floorOffsets = useMemo(() => {
+    const map = new Map<string, number>();
+    if (floorCode === null) {
+      [...floors]
+        .sort((a, b) => a.elevation - b.elevation)
+        .forEach((floor, index) => map.set(floor.floorCode, index * FLOOR_GAP));
+    }
+    return map;
+  }, [floors, floorCode]);
+
+  // 실행이력 구독 — SOP 실행기가 patrol 임무 run을 저장하면 경로를 다시 해석
+  useEffect(() => subscribeRuns(() => setRunsVersion((version) => version + 1)), []);
+
+  // 패트롤 경로 해석 — ① 최신 run patrol → ② 자동 선정 폴백
+  const patrolRoute = useMemo(
+    () => resolvePatrolRoute(topologySetId),
+    [topologySetId, runsVersion],
+  );
+
+  // 경로 노드 id → explode 오프셋 반영 경유점. 층 필터와 무관하게 전체 경로를
+  // 따른다(단일 층 모드에서도 데모 허용 — 오프셋 0이라 실제 고도 그대로).
+  const patrolWaypoints = useMemo<PatrolWaypoint[] | null>(() => {
+    if (!patrolRoute || !topologySetId) return null;
+    const set = getTopologySet(topologySetId);
+    if (!set) return null;
+    const nodeById = new Map(set.nodes.map((node) => [node.id, node]));
+    const checkpointIds = new Set(patrolRoute.checkpointNodeIds);
+    const waypoints: PatrolWaypoint[] = [];
+    for (const nodeId of patrolRoute.routeNodeIds) {
+      const node = nodeById.get(nodeId);
+      if (!node) continue; // 경로에 남은 미등록 노드 방어
+      waypoints.push({
+        nodeId,
+        position: [
+          node.worldPosition.x,
+          node.worldPosition.y + (floorOffsets.get(node.floorName) ?? 0),
+          node.worldPosition.z,
+        ],
+        checkpoint: checkpointIds.has(nodeId) || node.metadata["checkpoint"] === true,
+      });
+    }
+    return waypoints.length >= 2 ? waypoints : null;
+  }, [patrolRoute, topologySetId, floorOffsets]);
 
   // 렌더러 수명 주기 + 입력(orbit/zoom/pan) + 리사이즈 + rAF 루프 — 마운트 1회
   useEffect(() => {
@@ -399,11 +548,24 @@ function SpaceViewer3D({ siteUfid, topologySetId }: SpaceViewer3DProps) {
     canvas.addEventListener("wheel", handleWheel, { passive: false });
     canvas.addEventListener("contextmenu", handleContextMenu);
 
-    // rAF 루프 — dirty일 때만 draw(뷰가 숨겨져 크기 0이면 건너뜀)
+    // rAF 루프 — dirty일 때만 draw. 패트롤 재생 중에는 매 프레임 로봇 model
+    // 행렬을 갱신하고 상시 dirty로 돌린다(뷰가 숨겨져 크기 0이면 건너뜀).
     let rafId = 0;
     const frame = () => {
       rafId = requestAnimationFrame(frame);
       const activeRenderer = rendererRef.current;
+      const playback = playbackRef.current;
+      if (playback && activeRenderer) {
+        const elapsedSec = (performance.now() - playback.startMs) / 1000;
+        const pose = samplePatrolPose(playback.waypoints, playback.timeline, elapsedSec);
+        activeRenderer.setDynamicModel(
+          mat4Multiply(
+            mat4Translate(pose.position[0], pose.position[1], pose.position[2]),
+            mat4RotateY(pose.yaw),
+          ),
+        );
+        dirtyRef.current = true;
+      }
       if (!dirtyRef.current || !activeRenderer || canvas.width === 0 || canvas.height === 0) {
         return;
       }
@@ -431,49 +593,68 @@ function SpaceViewer3D({ siteUfid, topologySetId }: SpaceViewer3DProps) {
     };
   }, []);
 
-  // 사이트 변경 — 카메라를 새 건물 전체가 보이게 리셋 + 층 필터 초기화
+  // 사이트 변경 — 카메라를 새 건물 전체가 보이게 리셋
   useEffect(() => {
     cameraRef.current = createOrbitCamera(fitCamera(siteUfid));
-    setHiddenFloorCodes(new Set());
     dirtyRef.current = true;
   }, [siteUfid]);
 
-  // 장면 재조립 — 사이트/토폴로지 셋/표시 층/컨텍스트 복원 변화 시 버퍼 재업로드
+  // 장면 재조립 — 사이트/토폴로지 셋/표시 층(explode)/컨텍스트 복원 변화 시 버퍼 재업로드
   useEffect(() => {
     const renderer = rendererRef.current;
     if (!renderer) return;
-    renderer.setScene(buildSceneItems(siteUfid, topologySetId, visibleFloorCodes));
+    renderer.setScene(buildSceneItems(siteUfid, topologySetId, visibleFloorCodes, floorOffsets));
     dirtyRef.current = true;
-  }, [siteUfid, topologySetId, visibleFloorCodes, restoreGeneration]);
+  }, [siteUfid, topologySetId, visibleFloorCodes, floorOffsets, restoreGeneration]);
 
-  /** 층 체크박스 토글 — hidden 집합에 넣고 빼는 방식(기본 전 층 표시). */
-  const toggleFloor = (floorCode: string) => {
-    setHiddenFloorCodes((previous) => {
-      const next = new Set(previous);
-      if (next.has(floorCode)) {
-        next.delete(floorCode);
-      } else {
-        next.add(floorCode);
-      }
-      return next;
-    });
-  };
+  // 경로가 사라지면(셋 해제/노드 부족) 재생을 자동 중지한다
+  useEffect(() => {
+    if (!patrolWaypoints) {
+      setPatrolPlaying(false);
+    }
+  }, [patrolWaypoints]);
+
+  // 패트롤 재생 — 로봇개 메시를 동적 아이템으로 업로드하고 재생 상태를 rAF에 넘긴다.
+  // 경유점(explode 오프셋 포함)이 바뀌면 처음부터 다시 재생, 정지 시 동적 아이템 해제.
+  useEffect(() => {
+    const renderer = rendererRef.current;
+    if (!renderer) return;
+    if (patrolPlaying && patrolWaypoints) {
+      const styles = getComputedStyle(document.documentElement);
+      const robot = buildRobotDog();
+      renderer.setDynamic([
+        { kind: "solid", ...robot, color: resolveToken(styles, ROBOT_DOG_TOKEN), alpha: 1 },
+      ]);
+      playbackRef.current = {
+        waypoints: patrolWaypoints,
+        timeline: buildPatrolTimeline(patrolWaypoints),
+        startMs: performance.now(),
+      };
+    } else {
+      renderer.setDynamic([]);
+      playbackRef.current = null;
+    }
+    dirtyRef.current = true;
+  }, [patrolPlaying, patrolWaypoints, restoreGeneration]);
 
   return (
     <div className="space-viewer">
-      {/* 층 표시/숨김 체크박스 바 + 조작 힌트 */}
+      {/* 패트롤 데모 버튼 + 조작 힌트 바 — 층 표시는 페이지 층 탭(전체 건물 탭 포함)과 통합 */}
       <div className="space-viewer__floor-bar">
-        <span className="space-viewer__floor-label typo-text-sm">층 표시</span>
-        {floors.map((floor) => (
-          <label key={floor.floorCode} className="space-viewer__floor-check typo-text-sm">
-            <input
-              type="checkbox"
-              checked={!hiddenFloorCodes.has(floor.floorCode)}
-              onChange={() => toggleFloor(floor.floorCode)}
-            />
-            {floor.name}
-          </label>
-        ))}
+        <button
+          type="button"
+          className="space-viewer__patrol-btn typo-text-sm"
+          disabled={!patrolWaypoints}
+          aria-pressed={patrolPlaying}
+          title={
+            patrolWaypoints
+              ? "로봇개가 패트롤 경로(최신 실행이력 또는 자동 선정)를 따라 이동합니다"
+              : "토폴로지 셋을 선택하면 패트롤 데모를 재생할 수 있습니다"
+          }
+          onClick={() => setPatrolPlaying((playing) => !playing)}
+        >
+          {patrolPlaying ? "패트롤 데모 정지" : "🐕 패트롤 데모 재생"}
+        </button>
         <span className="space-viewer__hint typo-text-sm">
           드래그 회전 · 휠 확대/축소 · Shift/우클릭 드래그 이동
         </span>

@@ -18,12 +18,16 @@
 - 2026-07-05: **Phase 7 완료 (evaluator PASS) — 4단계 완료** — `docs/topology/` webbuilder 분석 문서 3건(노드 9필드 export 계약/생성 3방식/수직 연결 p0·p1·p2 체인/gltf extras 포맷/A*), `app/src/domain/topology/`(TopologyNodeData·TopologySet·TopologyLink 타입 + parseTopologyNodes 3형태 임포트 + deriveLinks(both/one-way/vertical) + A* pathFinder + 샘플 셋 topo-verification-building 26노드·계단 2세트·점검 포인트 4 + registry localStorage 영속), SOP 연동은 신규 NodeType 없이 `tpl-sop-patrol`(sop_task taskKind:"patrol", 29번째 템플릿) + validateGraph 규칙 9(토폴로지 참조/도달 불가 error) + PatrolRouteFields 인스펙터(경로 미리보기) + RuntimeMission.patrol/타임라인 patrol 엔트리/실행기 PATROL_WAYPOINT·CHECKPOINT 로그, 5번째 시드 "로봇개 야간 순찰"(왕복 validate error 0, 경로 12노드 57.8m), 공간 모델 뷰 토폴로지 오버레이(층별 필터/one-way 화살표/vertical 점선/checkpoint 링)+TopologyImportDialog. 기존 시드 4종 simulate 결과 바이트 단위 불변 확인. 계획 기록: `docs/plans/phase-7.md`
 - 2026-07-05: **Phase 8 완료 (evaluator PASS) — 5단계 완료** — 엔진 계약 확장(`ActionReport`/`REPORT_ACTION` 액션(DONE→COMPLETED, IMPOSSIBLE→FAILED, 전이표 밖 no-op)/`ACTION_REPORTED` 로그 kind(14종)/`ExecutionRun.actionReports?` optional 하위 호환), App 4번째 뷰 "현장 회신"(`app/src/responder/` — 모바일 420px 프레임, run 선택→담당자 간이 로그인(assigneeRole∪targets)→role 필터 상황전파 수신함+수신 확인(ACK)→할당 임무 카드 결과/비고 회신), 대시보드 "조치결과 회신 이력" 섹션 + 로그 라벨 "조치 회신". **T4 통합 단계에서 실제 동시성 버그 발견·수정**: ExecutionPanel이 run을 로컬 useState로만 보관해 Responder 회신을 구버전 스냅샷 기반 saveRun으로 덮어쓸 수 있던 문제 → 자기 runId subscribeRuns 구독으로 최신본 동기화. 계획 기록: `docs/plans/phase-8.md`
 - 2026-07-05: **Phase 9 완료 (evaluator PASS) — 6단계·전체 로드맵 완료** — 통합 seed data(담당자 `domain/contacts/` 17명 — 시드 assigneeRole 13종 전부 커버 + `domain/scenario/` INTEGRATED_SCENARIOS 2종(야간 순찰/LH2 누출, 로드 시 참조 무결성 throw)), 토폴로지 임의 생성기(`generateTopology` — footprint 무게중심+그리드 보간, MV 백본 연결, 계단/엘리베이터 수직 승격, mulberry32 결정성, BFS 단일 연결 보장 + `pickPatrolEndpoints`), 5번째 뷰 "시나리오"(6단계 순차 실행기: 생성→SOP 로드+패트롤 경로 치환→검증·컴파일→실행→자동/수동 회신→대시보드, Provider App 레벨 승격+AppViewContext 뷰 전환), 순수 WebGL 3D 뷰어(`spatial/webgl/` mat4/orbitCamera/meshBuilders/renderer — 의존성 0, 프리즘 압출+노드/링크+orbit/zoom, 색은 getComputedStyle 토큰 파싱, 2D/3D 토글), 조작 튜토리얼 15스텝(data-tutorial-id 13종 전수 일치, SVG 마우스 커서+하이라이트+뷰 자동 전환+폴백), vite manualChunks로 번들 경고 해소. 엔드투엔드 체인 48체크 PASS. 계획 기록: `docs/plans/phase-9.md`
+- 2026-07-05: **사용자 리뷰 수정사항 반영 (error/ 캡처 2건 기반)** —
+  - (에러1) SOP Group 자식 갇힘 수정: `extent:"parent"` 제거(addNodeFromTemplate/toStudioGraph) + `onNodeDragStop` 탈착·부착 로직(`studio/state/dragReparent.ts` 신규 — 자식 중심점이 그룹 밖이면 detach+절대좌표 전환, 독립 sop_task가 펼쳐진 그룹 안이면 attach+상대좌표+배열 뒤 이동), toStudioGraph 그룹 프레임 자동 확장(자식 bounding box+여백), 시드 5종 그룹 크기 340×310·자식 간격 조정으로 겹침 해소. detach 후 normalizeGraph groups/children 자동 제외 + trigger_in 검증 재적용(의도) 확인, 21체크 PASS.
+  - (에러2) 3D 뷰어 개선: ① 층 탭이 3D에도 적용(해당 층 슬래브/프리즘/시설물/노드/링크만) + 3D 전용 "전체 건물" 탭 신설 ② 전체 건물 모드 층간 explode(FLOOR_GAP 1.8m Y 오프셋 + 프리즘 높이 −0.05m)로 z-fighting(자글자글) 해소 ③ 로봇개 3D 모델(`buildRobotDog` 박스 8개 로우폴리) + "패트롤 데모 재생" — 경로 소스는 최신 run의 mission.patrol.routeNodeIds(subscribeRuns 연동, SOP 실행 반영) 폴백 pickPatrolEndpoints, 노드당 1.5초 등속 lerp+진행 방향 yaw+체크포인트 dwell(`webgl/patrolPath.ts` 순수 모듈, 24체크 PASS), renderer에 uModel 동적 변환 추가.
 
 ## In progress
 - 없음
 
 ## Next steps
-1. (완료) 전체 Phase 1~9 종료 — 필요 시 개선 후보: LH2 등 단층 사이트 생성 토폴로지 exit 미지정(문서화된 동작), 공간 모델 뷰 전환 시 사이트/셋 자동 포커스, 통합 시나리오 추가, 튜토리얼 스텝 보강
+1. 사용자 리뷰 수정 2건 반영 완료 — **브라우저에서 시각 확인 대기** (dev 서버 실행 중, HMR 반영됨): ① Studio에서 로봇 시드 로드 → 그룹 자식을 밖으로 드래그해 분리되는지 ② 공간 모델 3D에서 층 탭/전체 건물/패트롤 데모 재생/층간 간격 확인
+2. 개선 후보(미착수): LH2 등 단층 사이트 생성 토폴로지 exit 미지정(문서화된 동작), 공간 모델 뷰 전환 시 사이트/셋 자동 포커스, 통합 시나리오 추가, 튜토리얼 스텝 보강
 
 ## Blockers
 - 없음
