@@ -1,7 +1,7 @@
 /**
  * simulate — EventContext 시뮬레이션 진입점.
- * 현재는 compileGraph 호출 래퍼다. 향후 2단계(SOP 실행기)에서 "컴파일(계획 수립)"과
- * "실행(상태 진행)"을 분리할 때, 이 모듈이 실행기 쪽 진입점으로 확장될 예정이다.
+ * 현재는 compileGraph 호출 래퍼다. 2단계(SOP 실행기)에서 "컴파일(계획 수립)"과
+ * "실행(상태 진행)"이 분리되었다 — 실행기는 executor.ts로 분리됨(createRun/applyExecutorAction).
  */
 import type { EventContext, SOPGraph } from "../domain";
 import type { SimulateOptions, SimulationResult } from "./types";

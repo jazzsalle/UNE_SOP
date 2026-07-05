@@ -1,0 +1,409 @@
+/*
+ * 전자상황판(Dashboard) 스타일 — Phase 5 Task T3 소유 (상세 영역은 T5가 확장).
+ * 색상은 전부 디자인 시스템 CSS 변수 토큰 사용. hex/rgb 하드코딩 금지.
+ */
+
+/* ── DashboardPage 골격 ─────────────────────────────────────── */
+
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  background: var(--color-bg-muted);
+}
+
+.dashboard__header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-shrink: 0;
+  padding: 14px 20px;
+  background: var(--color-bg-surface);
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.dashboard__title {
+  margin: 0;
+  color: var(--color-text-default);
+  white-space: nowrap;
+}
+
+.dashboard__subtitle {
+  margin: 0;
+  color: var(--color-text-subtle);
+}
+
+/* 좌측 Run 목록(360px) / 우측 상세(1fr) 2컬럼 */
+.dashboard__body {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  flex: 1;
+  min-height: 0;
+  gap: 0;
+}
+
+/* run 미선택 시 우측 placeholder (RunDetailPanel 내부에서 렌더) */
+.dashboard__detail-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  color: var(--color-text-placeholder);
+}
+
+/* ── RunListPanel ───────────────────────────────────────────── */
+
+.run-list {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px;
+  background: var(--color-bg-surface);
+  border-right: 1px solid var(--color-border-subtle);
+}
+
+.run-list__title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 10px;
+  color: var(--color-text-default);
+}
+
+.run-list__count {
+  color: var(--color-text-placeholder);
+}
+
+.run-list__empty {
+  margin: 0;
+  padding: 12px;
+  border: 1px dashed var(--color-border-subtle);
+  border-radius: var(--radius-control);
+  color: var(--color-text-placeholder);
+}
+
+.run-list__items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* run 카드 — 버튼 요소지만 카드 형태로 표시 */
+.run-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 12px;
+  text-align: left;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-left: 3px solid transparent;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.run-card:hover {
+  background: var(--color-bg-neutral-hover);
+}
+
+/* 선택 카드 — 배경 subtle + 좌측 brand 보더 */
+.run-card--selected {
+  background: var(--color-bg-subtle);
+  border-left-color: var(--color-border-brand);
+}
+
+.run-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.run-card__name {
+  color: var(--color-text-default);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.run-card__meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.run-card__event {
+  color: var(--color-text-secondary);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.run-card__time {
+  color: var(--color-text-placeholder);
+  white-space: nowrap;
+}
+
+.run-card__bottom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.run-card__progress {
+  color: var(--color-text-subtle);
+}
+
+/* ── 상태/도메인 뱃지 — subtle 배경 + status 텍스트 토큰 ─────── */
+
+.dashboard-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.dashboard-badge--info {
+  background: var(--color-bg-info-subtle);
+  color: var(--color-text-info);
+}
+
+.dashboard-badge--success {
+  background: var(--color-bg-success-subtle);
+  color: var(--color-text-success);
+}
+
+.dashboard-badge--warning {
+  background: var(--color-bg-warning-subtle);
+  color: var(--color-text-warning);
+}
+
+.dashboard-badge--danger {
+  background: var(--color-bg-danger-subtle);
+  color: var(--color-text-danger);
+}
+
+.dashboard-badge--neutral {
+  background: var(--color-bg-muted);
+  color: var(--color-text-subtle);
+}
+
+.dashboard-badge--brand {
+  background: var(--color-bg-brand-subtle);
+  color: var(--color-text-brand);
+}
+
+/* ── RunDetailPanel (T5) ────────────────────────────────────── */
+
+.run-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 20px;
+}
+
+/* ① 요약 헤더 — 그래프명 + run 상태/경과 분 + 이벤트 요약 kv */
+.run-detail__summary {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-control);
+}
+
+.run-detail__summary-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.run-detail__name {
+  margin: 0;
+  color: var(--color-text-default);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.run-detail__elapsed {
+  margin-left: auto;
+  color: var(--color-text-subtle);
+  white-space: nowrap;
+}
+
+/* key/value 2열 그리드 — dt는 라벨, dd는 값 */
+.run-detail__kv {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 0;
+}
+
+.run-detail__kv dt {
+  color: var(--color-text-subtle);
+  white-space: nowrap;
+}
+
+.run-detail__kv dd {
+  margin: 0;
+  color: var(--color-text-default);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ②~⑤ 공통 섹션 카드 */
+.run-detail__section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-control);
+}
+
+.run-detail__section-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  color: var(--color-text-default);
+}
+
+.run-detail__section-note {
+  color: var(--color-text-placeholder);
+  font-weight: normal;
+}
+
+.run-detail__empty {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px dashed var(--color-border-subtle);
+  border-radius: var(--radius-control);
+  color: var(--color-text-placeholder);
+}
+
+/* ② 임무 현황 — 상태 뱃지 + 제목 + 담당/기한 메타 */
+.mission-status-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mission-status-list__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-control);
+}
+
+.mission-status-list__title {
+  color: var(--color-text-default);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.mission-status-list__meta {
+  margin-left: auto;
+  color: var(--color-text-subtle);
+  white-space: nowrap;
+}
+
+/* ④ 상황판 기록 카드 — 장소/시간/임무내용/상황전파 4필드 */
+.board-record-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-control);
+}
+
+.board-record-card__row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.board-record-card__key {
+  flex-shrink: 0;
+  width: 64px;
+  color: var(--color-text-subtle);
+}
+
+.board-record-card__value {
+  color: var(--color-text-default);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ── ExecutionLogTable + ③ 상황전파 공용 표 ─────────────────── */
+
+.log-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.log-table th {
+  padding: 6px 8px;
+  text-align: left;
+  color: var(--color-text-subtle);
+  background: var(--color-bg-muted);
+  border-bottom: 1px solid var(--color-border-default);
+  white-space: nowrap;
+}
+
+.log-table td {
+  padding: 6px 8px;
+  vertical-align: top;
+  color: var(--color-text-default);
+  border-bottom: 1px solid var(--color-border-subtle);
+  overflow-wrap: anywhere;
+}
+
+.log-table__time {
+  white-space: nowrap;
+}
+
+.log-table__elapsed {
+  margin-left: 6px;
+  color: var(--color-text-placeholder);
+}
+
+.log-table__kind {
+  white-space: nowrap;
+}
+
+/* 지연/실패 행 강조 — status subtle 배경 + status 텍스트 토큰 */
+.log-table__row--warning td {
+  background: var(--color-bg-warning-subtle);
+}
+
+.log-table__row--warning .log-table__kind {
+  color: var(--color-text-warning);
+}
+
+.log-table__row--danger td {
+  background: var(--color-bg-danger-subtle);
+}
+
+.log-table__row--danger .log-table__kind {
+  color: var(--color-text-danger);
+}

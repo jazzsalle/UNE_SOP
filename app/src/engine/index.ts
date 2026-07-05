@@ -11,3 +11,6 @@ export * from "./compileGraph";
 export * from "./runtimeMock";
 export * from "./simulate";
 export * from "./storage";
+export * from "./executionTypes";
+export * from "./runStorage";
+export * from "./executor";

@@ -44,7 +44,7 @@ function GraphStudioLayout() {
           "palette canvas inspector"
           "bottom bottom bottom"
         `,
-        height: "100vh",
+        height: "100%",
         background: "var(--color-bg-muted)",
         color: "var(--color-text-default)",
       }}

@@ -1,0 +1,241 @@
+/*
+ * Execution 탭 스타일 — Phase 5 Task T4 소유.
+ * 색상은 전부 디자인 시스템 CSS 변수 토큰(colors.css / colors-status.css) 사용.
+ * hex/rgb 하드코딩 금지. 버튼 규격은 StudioToolbar sm 버튼 관례
+ * (높이 32 / 패딩 0 12px / radius 6)를 따른다.
+ */
+
+/* ── 패널 골격 ──────────────────────────────────────────────── */
+
+.exec-panel {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 12px 16px;
+  background: var(--color-bg-surface);
+}
+
+.exec-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.exec-section__title {
+  margin: 0;
+  color: var(--color-text-default);
+}
+
+.exec-section__empty {
+  margin: 0;
+  color: var(--color-text-placeholder);
+}
+
+/* ── 실행 시작 폼 ───────────────────────────────────────────── */
+
+.exec-start {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.exec-start__select {
+  min-width: 280px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--color-border-default);
+  border-radius: 6px;
+  background: var(--color-bg-surface);
+  color: var(--color-text-default);
+  cursor: pointer;
+}
+
+.exec-start__select:focus {
+  outline: none;
+  border-color: var(--color-border-focus);
+}
+
+/* Compile 전 상태 안내 — 실행 시작 시 자동 Compile됨을 알린다. */
+.exec-start__hint {
+  margin: 0;
+  color: var(--color-text-subtle);
+}
+
+/* createRun 실패(reason) 인라인 경고 — Alert danger 스타일. */
+.exec-alert {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: var(--radius-control);
+  background: var(--color-bg-danger-subtle);
+  color: var(--color-text-danger);
+}
+
+/* ── 버튼 — StudioToolbar sm 버튼 관례 ─────────────────────── */
+
+.exec-btn {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.exec-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.exec-btn--primary {
+  background: var(--color-bg-brand);
+  color: var(--color-text-on-brand);
+}
+
+.exec-btn--outline {
+  background: var(--color-bg-surface);
+  border-color: var(--color-border-default);
+  color: var(--color-text-default);
+}
+
+.exec-btn--success {
+  background: var(--color-bg-success);
+  color: var(--color-text-on-brand);
+}
+
+.exec-btn--danger {
+  background: var(--color-bg-danger);
+  color: var(--color-text-on-brand);
+}
+
+/* ── run 헤더 (요약 + 모의 시계) ────────────────────────────── */
+
+.exec-run-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.exec-run-header__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.exec-run-header__name {
+  color: var(--color-text-default);
+}
+
+.exec-run-header__sub {
+  color: var(--color-text-placeholder);
+  overflow-wrap: anywhere;
+}
+
+.exec-clock {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.exec-clock__elapsed {
+  color: var(--color-text-brand);
+  white-space: nowrap;
+}
+
+/* ── 상태 뱃지 — subtle 배경 + status 텍스트 토큰 ──────────── */
+
+.exec-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.exec-badge--info {
+  background: var(--color-bg-info-subtle);
+  color: var(--color-text-info);
+}
+
+.exec-badge--brand {
+  background: var(--color-bg-brand-subtle);
+  color: var(--color-text-brand);
+}
+
+.exec-badge--success {
+  background: var(--color-bg-success-subtle);
+  color: var(--color-text-success);
+}
+
+.exec-badge--warning {
+  background: var(--color-bg-warning-subtle);
+  color: var(--color-text-warning);
+}
+
+.exec-badge--danger {
+  background: var(--color-bg-danger-subtle);
+  color: var(--color-text-danger);
+}
+
+.exec-badge--neutral {
+  background: var(--color-bg-muted);
+  color: var(--color-text-subtle);
+}
+
+/* ── 임무 통제 표 / 실행 로그 표 ────────────────────────────── */
+
+.exec-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.exec-table th {
+  padding: 4px 8px;
+  text-align: left;
+  color: var(--color-text-placeholder);
+  border-bottom: 1px solid var(--color-border-subtle);
+  white-space: nowrap;
+}
+
+.exec-table td {
+  padding: 5px 8px;
+  color: var(--color-text-default);
+  border-bottom: 1px solid var(--color-border-subtle);
+  vertical-align: middle;
+}
+
+.exec-table__actions {
+  display: flex;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+/* 로그 뷰 — 최신이 아래(스크롤 하단 고정)이므로 스크롤 컨테이너 높이를 제한한다. */
+.exec-log {
+  max-height: 220px;
+  min-height: 0;
+  overflow-y: auto;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-control);
+}
+
+.exec-log .exec-table th {
+  position: sticky;
+  top: 0;
+  background: var(--color-bg-surface);
+}
+
+.exec-log__message {
+  overflow-wrap: anywhere;
+}
+
+.exec-log__time {
+  white-space: nowrap;
+}
