@@ -23,11 +23,12 @@
   - (에러2) 3D 뷰어 개선: ① 층 탭이 3D에도 적용(해당 층 슬래브/프리즘/시설물/노드/링크만) + 3D 전용 "전체 건물" 탭 신설 ② 전체 건물 모드 층간 explode(FLOOR_GAP 1.8m Y 오프셋 + 프리즘 높이 −0.05m)로 z-fighting(자글자글) 해소 ③ 로봇개 3D 모델(`buildRobotDog` 박스 8개 로우폴리) + "패트롤 데모 재생" — 경로 소스는 최신 run의 mission.patrol.routeNodeIds(subscribeRuns 연동, SOP 실행 반영) 폴백 pickPatrolEndpoints, 노드당 1.5초 등속 lerp+진행 방향 yaw+체크포인트 dwell(`webgl/patrolPath.ts` 순수 모듈, 24체크 PASS), renderer에 uModel 동적 변환 추가.
 
 ## In progress
-- 없음
+- **[미해결 — 회사 PC에서 이어서] 에러3 (`error/7월 5일 에러3.png`)**: SOP Group에서 자식을 밖으로 빼는 detach는 동작하나(헤더 "Task 0" 확인), 분리된 sop_task를 다시 그룹 프레임 안으로 드래그해 넣는 **attach가 동작하지 않는 것으로 보임**. 점검 포인트: `app/src/studio/state/dragReparent.ts`의 `resolveDragReparent`/`findExpandedGroupAt` — (a) attach 대상 판정이 sop_task 노드 중심점 기준인데 measured 크기 미확보 시 실패 가능성, (b) GraphCanvas `onNodeDragStop`이 reparentNodeAfterDrag를 호출하는 경로에서 attach 분기 도달 여부, (c) RF v12에서 parentId를 나중에 부여할 때 position 상대좌표 전환·배열 순서(부모 앞) 처리 확인. 재현: 로봇 시드 로드 → 자식 2개 밖으로 드래그 → 다시 그룹 안으로 드래그.
 
 ## Next steps
-1. 사용자 리뷰 수정 2건 반영 완료 — **브라우저에서 시각 확인 대기** (dev 서버 실행 중, HMR 반영됨): ① Studio에서 로봇 시드 로드 → 그룹 자식을 밖으로 드래그해 분리되는지 ② 공간 모델 3D에서 층 탭/전체 건물/패트롤 데모 재생/층간 간격 확인
-2. 개선 후보(미착수): LH2 등 단층 사이트 생성 토폴로지 exit 미지정(문서화된 동작), 공간 모델 뷰 전환 시 사이트/셋 자동 포커스, 통합 시나리오 추가, 튜토리얼 스텝 보강
+1. **에러3 수정** — 그룹 재부착(attach) 미동작 (In progress 항목 참조)
+2. 사용자 시각 확인 잔여: 3D 층 탭/전체 건물/패트롤 데모 재생/층간 간격 (에러1 detach·프레임 확장은 동작 확인됨 — 에러3 캡처에서 확인)
+3. 개선 후보(미착수): LH2 등 단층 사이트 생성 토폴로지 exit 미지정(문서화된 동작), 공간 모델 뷰 전환 시 사이트/셋 자동 포커스, 통합 시나리오 추가, 튜토리얼 스텝 보강
 
 ## Blockers
 - 없음
