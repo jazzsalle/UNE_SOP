@@ -10,6 +10,8 @@
  * - FAIL_MISSION:     SENT | RUNNING | DELAYED → FAILED
  * - ACK_NOTIFICATION: SENT → ACKED
  * - TICK:             elapsedMinutes 증가 + dueMinutes < elapsed인 SENT/RUNNING 임무 → DELAYED
+ * - REPORT_ACTION:    SENT | RUNNING | DELAYED → COMPLETED(DONE) | FAILED(IMPOSSIBLE)
+ *                     (현장 회신은 착수 절차 없이 완료/불가 처리 허용, actionReports 누적)
  * 허용 전이표 밖의 액션은 no-op(입력 run 동일 참조 반환)이다.
  *
  * React·@xyflow/react 무의존 순수 모듈. localStorage 접근 금지 —
@@ -19,6 +21,7 @@ import type { EventContext, RuntimeMission, SOPGraph } from "../domain";
 import { findTopologyNode } from "../domain/topology";
 import type { BoardRecordMock, SimulateOptions } from "./types";
 import type {
+  ActionReport,
   ExecutionLogKind,
   ExecutionRun,
   ExecutorAction,
@@ -174,6 +177,7 @@ export function createRun(
     endedAt: undefined,
     elapsedMinutes: 0,
     logs: [],
+    actionReports: [],
   };
 
   // 상황판 기록을 run 초기 상태(임무/전파 전부 SENT) 기준으로 재기입한다 — JSDoc 참조.
@@ -235,6 +239,8 @@ export function applyExecutorAction(run: ExecutionRun, action: ExecutorAction): 
       return ackNotification(run, action.notificationId);
     case "TICK":
       return applyTick(run, action.minutes);
+    case "REPORT_ACTION":
+      return reportAction(run, action);
     default:
       return run;
   }
@@ -355,6 +361,53 @@ function applyTick(run: ExecutionRun, minutes: number): ExecutionRun {
       missionSummary: mission.title,
     });
   }
+  return draft;
+}
+
+/**
+ * 현장 조치결과 회신(REPORT_ACTION) — SENT | RUNNING | DELAYED 임무에만 허용.
+ * DONE → COMPLETED, IMPOSSIBLE → FAILED로 전이하고(현장 회신은 착수 절차 없이
+ * 완료/불가 처리 허용), ActionReport를 actionReports에 누적한 뒤 ACTION_REPORTED
+ * 로그를 남기고 종결 판정을 시도한다. 대상 임무 미존재/전이표 밖 상태는 no-op
+ * (동일 참조 반환). 로그 kind와 actionReports 누적이 다르므로 transitionMission을
+ * 재사용하지 않고 별도 구현한다.
+ */
+function reportAction(
+  run: ExecutionRun,
+  action: Extract<ExecutorAction, { type: "REPORT_ACTION" }>,
+): ExecutionRun {
+  const current = run.missions.find((mission) => mission.missionId === action.missionId);
+  if (!current || !["SENT", "RUNNING", "DELAYED"].includes(current.status)) return run;
+
+  const draft = deepClone(run);
+  const mission = draft.missions.find((m) => m.missionId === action.missionId)!;
+  mission.status = action.result === "DONE" ? "COMPLETED" : "FAILED";
+
+  // 회신 기록 누적 — 이전 버전에서 저장된 run은 actionReports가 없을 수 있어 초기화한다.
+  const reports = (draft.actionReports ??= []);
+  const report: ActionReport = {
+    reportId: `REPORT-${String(reports.length + 1).padStart(3, "0")}`,
+    missionId: mission.missionId,
+    missionTitle: mission.title,
+    reporter: action.reporter,
+    result: action.result,
+    note: action.note,
+    reportedAt: loggedAtOf(draft.startedAt, draft.elapsedMinutes),
+    elapsedMinutes: draft.elapsedMinutes,
+  };
+  reports.push(report);
+
+  const resultLabel = action.result === "DONE" ? "조치 완료" : "조치 불가";
+  pushLog(draft, {
+    kind: "ACTION_REPORTED",
+    nodeId: mission.nodeId,
+    missionId: mission.missionId,
+    message:
+      `${action.reporter} 조치 회신 — ${resultLabel}` + (action.note ? `: ${action.note}` : ""),
+    missionSummary: mission.title,
+  });
+
+  finalizeIfSettled(draft);
   return draft;
 }
 

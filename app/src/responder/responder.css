@@ -1,0 +1,340 @@
+/*
+ * 현장 회신(Responder) 스타일 — Phase 8 Task T2 소유.
+ * 외부 웹앱 관점을 모바일 폭 시뮬레이션 프레임(중앙 정렬 max-width 420px 카드)으로 표현한다.
+ * 색·radius·그림자·타이포는 전부 디자인 시스템 CSS 변수 토큰 사용. hex/rgb 하드코딩 금지.
+ */
+
+/* ── 페이지 골격 — 배경 muted 위 중앙 프레임 ────────────────── */
+
+.responder {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px 16px;
+  background: var(--color-bg-muted);
+}
+
+/* 모바일 폭 시뮬레이션 프레임 — surface 카드 + elevation 토큰 그림자 */
+.responder__frame {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 420px;
+  padding: 20px 16px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-surface);
+  box-shadow: var(--elevation-03);
+}
+
+.responder__header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.responder__title {
+  margin: 0;
+  color: var(--color-text-default);
+}
+
+.responder__subtitle {
+  margin: 0;
+  color: var(--color-text-subtle);
+}
+
+/* ── 섹션 공통 ──────────────────────────────────────────────── */
+
+.responder-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.responder-section__title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  color: var(--color-text-default);
+}
+
+.responder-section__note {
+  color: var(--color-text-placeholder);
+  font-weight: normal;
+}
+
+/* 빈 상태 / 선택 안내 placeholder — 대시보드 empty 관례(dashed border) */
+.responder__placeholder {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px dashed var(--color-border-subtle);
+  border-radius: var(--radius-control);
+  color: var(--color-text-placeholder);
+}
+
+/* 종결 run 읽기 전용 안내 — warning subtle */
+.responder__readonly-note {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: var(--radius-control);
+  background: var(--color-bg-warning-subtle);
+  color: var(--color-text-warning);
+}
+
+/* ── 셀렉트 (run 선택 / 담당자 간이 로그인) ─────────────────── */
+
+.responder-select {
+  width: 100%;
+  height: 36px;
+  padding: 0 8px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-surface);
+  color: var(--color-text-default);
+  cursor: pointer;
+}
+
+.responder-select:focus {
+  outline: none;
+  border-color: var(--color-border-focus);
+}
+
+/* ── 버튼 — ExecutionPanel sm 버튼 관례(높이 32 / 패딩 0 12px) ─ */
+
+.responder-btn {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.responder-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.responder-btn--primary {
+  background: var(--color-bg-brand);
+  color: var(--color-text-on-brand);
+}
+
+.responder-btn--outline {
+  background: var(--color-bg-surface);
+  border-color: var(--color-border-default);
+  color: var(--color-text-default);
+}
+
+.responder-btn--outline:hover:not(:disabled) {
+  background: var(--color-bg-neutral-hover);
+}
+
+/* ── 상태 뱃지 — subtle 배경 + status 텍스트 토큰 (대시보드 관례) ── */
+
+.responder-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.responder-badge--info {
+  background: var(--color-bg-info-subtle);
+  color: var(--color-text-info);
+}
+
+.responder-badge--brand {
+  background: var(--color-bg-brand-subtle);
+  color: var(--color-text-brand);
+}
+
+.responder-badge--success {
+  background: var(--color-bg-success-subtle);
+  color: var(--color-text-success);
+}
+
+.responder-badge--warning {
+  background: var(--color-bg-warning-subtle);
+  color: var(--color-text-warning);
+}
+
+.responder-badge--danger {
+  background: var(--color-bg-danger-subtle);
+  color: var(--color-text-danger);
+}
+
+.responder-badge--neutral {
+  background: var(--color-bg-muted);
+  color: var(--color-text-subtle);
+}
+
+/* ── ③ 상황전파 수신함 카드 ─────────────────────────────────── */
+
+.noti-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.noti-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-control);
+}
+
+.noti-card__top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.noti-card__message {
+  margin: 0;
+  color: var(--color-text-default);
+  overflow-wrap: anywhere;
+}
+
+.noti-card__bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.noti-card__targets {
+  color: var(--color-text-subtle);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ── ④ 임무 회신 카드 ───────────────────────────────────────── */
+
+.mission-report-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-surface);
+}
+
+.mission-report-card__top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mission-report-card__title {
+  color: var(--color-text-default);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.mission-report-card__meta {
+  margin: 0;
+  color: var(--color-text-subtle);
+}
+
+/* 회신 폼 — 결과 라디오 + 비고 입력 + 회신 버튼 */
+.mission-report-card__form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--color-border-subtle);
+}
+
+.mission-report-card__radios {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.mission-report-card__radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-default);
+  cursor: pointer;
+}
+
+.mission-report-card__radio input {
+  accent-color: var(--color-bg-brand);
+  cursor: pointer;
+}
+
+.mission-report-card__note {
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-surface);
+  color: var(--color-text-default);
+}
+
+.mission-report-card__note::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+.mission-report-card__note:focus {
+  outline: none;
+  border-color: var(--color-border-focus);
+}
+
+.mission-report-card__submit-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* 회신 불가 안내(회신 없이 종결 / 종결 run) */
+.mission-report-card__closed {
+  margin: 0;
+  color: var(--color-text-placeholder);
+}
+
+/* ── 회신 내역 (읽기 전용) ──────────────────────────────────── */
+
+.report-history {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-control);
+}
+
+.report-history__row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.report-history__key {
+  flex-shrink: 0;
+  width: 32px;
+  color: var(--color-text-subtle);
+}
+
+.report-history__value {
+  color: var(--color-text-default);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

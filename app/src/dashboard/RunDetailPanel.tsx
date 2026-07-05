@@ -1,8 +1,8 @@
 /**
  * Run Detail Panel — 선택된 실행 Run의 상세를 관리자 점검용으로 표시한다.
  * ① 요약 헤더(그래프명/이벤트 타입/심각도/장소/발생 시각/run 상태/경과 분)
- * ② 임무 현황 ③ 상황전파 목록 ④ 상황판 기록(장소·시간·임무내용·상황전파 카드)
- * ⑤ 실행이력 로그 테이블(ExecutionLogTable).
+ * ② 임무 현황 ③ 상황전파 목록 ④ 조치결과 회신 이력(현장 회신 뷰의 REPORT_ACTION 누적)
+ * ⑤ 상황판 기록(장소·시간·임무내용·상황전파 카드) ⑥ 실행이력 로그 테이블(ExecutionLogTable).
  *
  * 데이터는 loadRun(runId)로 읽고 subscribeRuns로 saveRun/deleteRun 동기 notify를 받아
  * 진행 중 run을 실시간 갱신한다 — 구독 시 version 카운터만 올리고, run 자체는
@@ -14,6 +14,7 @@ import type { RuntimeMission, RuntimeNotification, Severity } from "../domain";
 import {
   loadRun,
   subscribeRuns,
+  type ActionReport,
   type ExecutionRunStatus,
 } from "../engine";
 import ExecutionLogTable from "./ExecutionLogTable";
@@ -74,6 +75,18 @@ const NOTIFICATION_STATUS_BADGE: Record<RuntimeNotification["status"], string> =
   FAILED: "dashboard-badge--danger",
 };
 
+/** 조치결과 회신 결과 → 뱃지 변형 클래스 (DONE=success, IMPOSSIBLE=danger). */
+const REPORT_RESULT_BADGE: Record<ActionReport["result"], string> = {
+  DONE: "dashboard-badge--success",
+  IMPOSSIBLE: "dashboard-badge--danger",
+};
+
+/** 조치결과 회신 결과 → 한국어 라벨. */
+const REPORT_RESULT_LABEL: Record<ActionReport["result"], string> = {
+  DONE: "조치 완료",
+  IMPOSSIBLE: "조치 불가",
+};
+
 /** 상황판 기록 카드의 4개 필드 키 — 표시 순서 고정. */
 const BOARD_FIELD_KEYS = ["장소", "시간", "임무내용", "상황전파"] as const;
 
@@ -111,6 +124,8 @@ function RunDetailPanel({ runId }: RunDetailPanelProps) {
 
   const { eventContext } = run;
   const location = eventContext.spaceId ?? eventContext.siteId ?? "-";
+  // Phase 8 이전 localStorage run에는 actionReports 필드가 없다 — ?? []로 하위 호환.
+  const actionReports = run.actionReports ?? [];
 
   return (
     <section className="run-detail" aria-label="실행이력 상세">
@@ -220,7 +235,56 @@ function RunDetailPanel({ runId }: RunDetailPanelProps) {
         )}
       </div>
 
-      {/* ④ 상황판 기록 — 장소/시간/임무내용/상황전파 4필드 카드 */}
+      {/* ④ 조치결과 회신 이력 — 현장 회신 뷰(REPORT_ACTION)의 누적 회신 */}
+      <div className="run-detail__section">
+        <h4 className="run-detail__section-title typo-text-md font-bold">
+          조치결과 회신 이력
+          <span className="run-detail__section-note typo-text-sm">
+            {actionReports.length}건
+          </span>
+        </h4>
+        {actionReports.length === 0 ? (
+          <p className="run-detail__empty typo-text-sm">
+            회신 이력이 없습니다 — 현장 회신 뷰에서 조치결과를 회신하면 기록됩니다
+          </p>
+        ) : (
+          <table className="log-table typo-text-sm">
+            <thead>
+              <tr>
+                <th>회신자</th>
+                <th>회신 시각</th>
+                <th>임무</th>
+                <th>결과</th>
+                <th>비고</th>
+              </tr>
+            </thead>
+            <tbody>
+              {actionReports.map((report) => (
+                <tr key={report.reportId}>
+                  <td>{report.reporter}</td>
+                  <td className="log-table__time">
+                    {formatLocalTime(report.reportedAt)}
+                    <span className="log-table__elapsed">
+                      +{report.elapsedMinutes}분
+                    </span>
+                  </td>
+                  <td>{report.missionTitle}</td>
+                  <td>
+                    <span
+                      className={`dashboard-badge ${REPORT_RESULT_BADGE[report.result]} font-bold`}
+                    >
+                      {REPORT_RESULT_LABEL[report.result]}
+                    </span>
+                  </td>
+                  <td>{report.note ?? "-"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* ⑤ 상황판 기록 — 장소/시간/임무내용/상황전파 4필드 카드 */}
       <div className="run-detail__section">
         <h4 className="run-detail__section-title typo-text-md font-bold">
           상황판 기록
@@ -250,7 +314,7 @@ function RunDetailPanel({ runId }: RunDetailPanelProps) {
         )}
       </div>
 
-      {/* ⑤ 실행이력 로그 테이블 */}
+      {/* ⑥ 실행이력 로그 테이블 */}
       <div className="run-detail__section">
         <h4 className="run-detail__section-title typo-text-md font-bold">
           실행이력 로그

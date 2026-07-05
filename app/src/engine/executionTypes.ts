@@ -15,7 +15,7 @@ import type { BoardRecordMock } from "./types";
 /** 실행(run)의 전체 상태 — 진행 중 / 정상 종료 / 실패 종료. */
 export type ExecutionRunStatus = "RUNNING" | "COMPLETED" | "FAILED";
 
-/** 실행이력 로그 항목의 구분 — run 수명주기, 임무 전이, 패트롤 경유, 상황전파, 상황판 기록 13종. */
+/** 실행이력 로그 항목의 구분 — run 수명주기, 임무 전이, 패트롤 경유, 상황전파, 조치 회신, 상황판 기록 14종. */
 export type ExecutionLogKind =
   | "RUN_STARTED"
   | "MISSION_SENT"
@@ -27,9 +27,33 @@ export type ExecutionLogKind =
   | "PATROL_CHECKPOINT"
   | "NOTIFICATION_SENT"
   | "NOTIFICATION_ACKED"
+  | "ACTION_REPORTED"
   | "BOARD_RECORDED"
   | "RUN_COMPLETED"
   | "RUN_FAILED";
+
+/**
+ * 조치결과 회신 — 외부 현장 점검자/안전관리자가 자기 임무에 대해 보내는 회신 1건.
+ * REPORT_ACTION 액션 처리 시 실행기가 생성해 `ExecutionRun.actionReports`에 누적한다.
+ */
+export interface ActionReport {
+  /** 회신 식별자 — run 내 순번 기반(`REPORT-001` 형식). */
+  reportId: string;
+  /** 회신 대상 임무 id. */
+  missionId: string;
+  /** 회신 대상 임무 제목 — 대시보드 표시용 스냅샷. */
+  missionTitle: string;
+  /** 회신자 — 담당자 role 또는 이름. */
+  reporter: string;
+  /** 조치 결과 — DONE(조치 완료) / IMPOSSIBLE(조치 불가). */
+  result: "DONE" | "IMPOSSIBLE";
+  /** 비고 — 현장 특이사항 등 자유 서술(선택). */
+  note?: string;
+  /** 회신 시각(ISO, 모의 시각) — startedAt + elapsedMinutes로 계산한다. */
+  reportedAt: string;
+  /** run 시작 이후 경과 분(모의 시계) — 회신 시점. */
+  elapsedMinutes: number;
+}
 
 /**
  * 실행이력 로그의 한 항목 — 관리자 점검 화면(전자상황판)의 행 단위 데이터.
@@ -99,15 +123,29 @@ export interface ExecutionRun {
   elapsedMinutes: number;
   /** 실행이력 로그 — seq 오름차순. */
   logs: ExecutionLogEntry[];
+  /**
+   * 조치결과 회신 누적 목록 — REPORT_ACTION 처리 순서대로 push된다.
+   * Phase 8 추가 필드로 **optional** — 이전에 localStorage에 저장된 run에는 이 필드가
+   * 없으므로 하위 호환을 위해 필수로 만들지 않는다(소비 측은 `?? []`로 읽는다).
+   */
+  actionReports?: ActionReport[];
 }
 
 /**
  * 실행기 액션 (discriminated union) — `applyExecutorAction(run, action)`의 입력.
- * 임무 수동 전이 3종 + 상황전파 확인 + 모의 시간 진행(TICK).
+ * 임무 수동 전이 3종 + 상황전파 확인 + 모의 시간 진행(TICK) + 현장 조치결과 회신.
  */
 export type ExecutorAction =
   | { type: "START_MISSION"; missionId: string }
   | { type: "COMPLETE_MISSION"; missionId: string }
   | { type: "FAIL_MISSION"; missionId: string }
   | { type: "ACK_NOTIFICATION"; notificationId: string }
-  | { type: "TICK"; minutes: number };
+  | { type: "TICK"; minutes: number }
+  | {
+      /** 현장 조치결과 회신 — DONE이면 COMPLETED, IMPOSSIBLE이면 FAILED로 전이. */
+      type: "REPORT_ACTION";
+      missionId: string;
+      result: "DONE" | "IMPOSSIBLE";
+      reporter: string;
+      note?: string;
+    };

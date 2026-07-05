@@ -4,7 +4,7 @@
 2026-07-05
 
 ## Current goal
-Phase 8 — 5단계: 외부 현장 점검자/안전관리자가 상황전파를 수신하고 조치결과를 회신하면 실행이력 로그·대시보드에 반영되는 웹앱 (`/phase-run 8`로 시작)
+Phase 9 — 6단계(최종): 통합 seed data + 시나리오 실행기(토폴로지 임의 생성·공간 연결), 간단 WebGL 뷰어, 마우스 커서 위치를 표기하는 단계별 조작 튜토리얼 → 엔드투엔드 데모 통합 서비스 (`/phase-run 9`로 시작)
 
 ## Done this session
 - 2026-07-04: 하네스 부트스트랩 완료 — planner/generator/evaluator subagent, phase-run/handoff/resume-work 스킬, CLAUDE.md(Phase 1~9 정의), evaluation_criteria.md, SessionStart hook 생성. 설계 문서(Project Instructions for Codex + 단계별 개발내용.txt) 분석 및 9개 Phase 분해 확정.
@@ -16,13 +16,13 @@ Phase 8 — 5단계: 외부 현장 점검자/안전관리자가 상황전파를 
 - 2026-07-05: **Phase 5 완료 (evaluator PASS) — 2단계 완료** — `engine/executor.ts`(createRun/applyExecutorAction 불변 리듀서 상태 머신: SENT→RUNNING→COMPLETED, TICK 기반 dueMinutes 초과 DELAYED, FAIL_MISSION, ACK_NOTIFICATION; React/localStorage 무의존), `executionTypes.ts`(ExecutionRun/ExecutionLogEntry — 장소/시간/임무내용/상황전파 4필드 전 로그 필수), `runStorage.ts`(localStorage `sop-studio:runs` + same-tab 실시간 반영용 subscribeRuns), App 셸 Studio|Dashboard 뷰 전환(두 뷰 동시 마운트 + display:none — RF 캔버스 상태 보존), Studio 하단 Execution 탭(이벤트 선택→실행 시작(자동 Compile)→임무 착수/완료/실패 버튼+TICK+로그 테이블, 매 변경 saveRun), 전자상황판 대시보드(`dashboard/` RunListPanel + RunDetailPanel: 요약/임무 현황/상황전파/상황판 기록 4필드 카드/ExecutionLogTable 6열, 훈련·실제 공통 점검 표기, 실시간 갱신). 실행기 검증 47체크+종단 42assert PASS. 계획 기록: `docs/plans/phase-5.md`
 - 2026-07-05: **Phase 6 완료 (evaluator PASS) — 3단계 완료** — `docs/spatial/` 작업규정 분석 문서 7건(별표 2 레이어 분류/별표 3 표준데이터 11종 객체유형/별표 5 명명규칙+시설구분코드 전표/별표 6 속성 QAL·SLP·DIR·SKT·HCP/별표 10 품질기준/스키마 매핑 결정), `app/src/domain/spatial/`(SpatialSite·Floor·Space·Facility 타입 + DIVISION 12종·CLASSIFY 8종 코드 테이블 + naming build/parse 왕복 함수 — 기본키 38자, 규정 원문 "41"은 합산 오기로 문서화), 검증용 건물(층 3/공간 21/시설물 16, footprint+높이 3D 지오메트리, 전 id 명명 함수 생성) + 시드 4도메인 사이트 + registry 조회 API, 시드 4종 공간 id 표준 전환(SITE-*→UFID 17자 등), validateGraph 규칙 8(공간 참조 warning/info), PropertyInspector 공간 피커(SpaceScopeFields/AssetPickerField — 미등록 id 경고+값 보존), SimulateDialog 레지스트리 셀렉트, App 3뷰째 "공간 모델"(SVG 층 평면 + 명명 분해 상세). 계획 기록: `docs/plans/phase-6.md`
 - 2026-07-05: **Phase 7 완료 (evaluator PASS) — 4단계 완료** — `docs/topology/` webbuilder 분석 문서 3건(노드 9필드 export 계약/생성 3방식/수직 연결 p0·p1·p2 체인/gltf extras 포맷/A*), `app/src/domain/topology/`(TopologyNodeData·TopologySet·TopologyLink 타입 + parseTopologyNodes 3형태 임포트 + deriveLinks(both/one-way/vertical) + A* pathFinder + 샘플 셋 topo-verification-building 26노드·계단 2세트·점검 포인트 4 + registry localStorage 영속), SOP 연동은 신규 NodeType 없이 `tpl-sop-patrol`(sop_task taskKind:"patrol", 29번째 템플릿) + validateGraph 규칙 9(토폴로지 참조/도달 불가 error) + PatrolRouteFields 인스펙터(경로 미리보기) + RuntimeMission.patrol/타임라인 patrol 엔트리/실행기 PATROL_WAYPOINT·CHECKPOINT 로그, 5번째 시드 "로봇개 야간 순찰"(왕복 validate error 0, 경로 12노드 57.8m), 공간 모델 뷰 토폴로지 오버레이(층별 필터/one-way 화살표/vertical 점선/checkpoint 링)+TopologyImportDialog. 기존 시드 4종 simulate 결과 바이트 단위 불변 확인. 계획 기록: `docs/plans/phase-7.md`
+- 2026-07-05: **Phase 8 완료 (evaluator PASS) — 5단계 완료** — 엔진 계약 확장(`ActionReport`/`REPORT_ACTION` 액션(DONE→COMPLETED, IMPOSSIBLE→FAILED, 전이표 밖 no-op)/`ACTION_REPORTED` 로그 kind(14종)/`ExecutionRun.actionReports?` optional 하위 호환), App 4번째 뷰 "현장 회신"(`app/src/responder/` — 모바일 420px 프레임, run 선택→담당자 간이 로그인(assigneeRole∪targets)→role 필터 상황전파 수신함+수신 확인(ACK)→할당 임무 카드 결과/비고 회신), 대시보드 "조치결과 회신 이력" 섹션 + 로그 라벨 "조치 회신". **T4 통합 단계에서 실제 동시성 버그 발견·수정**: ExecutionPanel이 run을 로컬 useState로만 보관해 Responder 회신을 구버전 스냅샷 기반 saveRun으로 덮어쓸 수 있던 문제 → 자기 runId subscribeRuns 구독으로 최신본 동기화. 계획 기록: `docs/plans/phase-8.md`
 
 ## In progress
 - 없음
 
 ## Next steps
-1. `/phase-run 8` — 외부 점검자/안전관리자용 상황전파 수신·조치결과 회신 웹앱 → 실행이력 로그·대시보드 반영 (5단계)
-2. Phase 9 — 통합 seed data + 시나리오 실행기 + WebGL 뷰어 + 조작 튜토리얼 (6단계)
+1. `/phase-run 9` — 통합 seed data + 시나리오 실행기(토폴로지 임의 생성·공간 연결) + 간단 WebGL 뷰어 + 마우스 커서 위치 표기 단계별 조작 튜토리얼 → 엔드투엔드 데모 (6단계, 최종)
 
 ## Blockers
 - 없음

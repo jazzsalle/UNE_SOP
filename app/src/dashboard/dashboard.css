@@ -262,7 +262,7 @@
   overflow-wrap: anywhere;
 }
 
-/* ②~⑤ 공통 섹션 카드 */
+/* ②~⑥ 공통 섹션 카드 */
 .run-detail__section {
   display: flex;
   flex-direction: column;
@@ -406,4 +406,14 @@
 
 .log-table__row--danger .log-table__kind {
   color: var(--color-text-danger);
+}
+
+/* 조치 회신(ACTION_REPORTED) 행 강조 — 결과(DONE/IMPOSSIBLE) 중립인 brand 계열.
+ * ④ 조치결과 회신 이력 표 자체는 .log-table/.dashboard-badge 재사용으로 추가 클래스 없음. */
+.log-table__row--brand td {
+  background: var(--color-bg-brand-subtle);
+}
+
+.log-table__row--brand .log-table__kind {
+  color: var(--color-text-brand);
 }

@@ -9,6 +9,9 @@
  * run은 이 컴포넌트의 로컬 useState로만 관리한다(GraphStudioContext 수정 금지 —
  * 병렬 태스크 계약 보호). 모든 상태 변경마다 `setRun(next); saveRun(next);`로
  * localStorage에 영속화해 Dashboard가 subscribeRuns로 실시간 반영하게 한다.
+ * 단, 같은 run을 현장 회신 뷰(ResponderPage)도 saveRun으로 갱신할 수 있으므로
+ * (Phase 8), subscribeRuns로 자기 runId의 최신본을 로컬 스냅샷에 반영한다 —
+ * 구독 없이는 구버전 스냅샷 기반 다음 액션이 외부 회신을 덮어쓴다.
  *
  * **Compile 유도 방식(택1 근거)**: compiledGraph가 없으면 "실행 시작" 버튼에서
  * runCompile()을 먼저 호출한 뒤 그 반환 그래프로 진행한다 — runCompile()이 컴파일
@@ -16,9 +19,15 @@
  * 실행까지 이어져 사용자 마찰이 없다. 대신 Compile 전 상태임을 안내 문구
  * ("Compile 전 상태입니다 — 실행 시작 시 자동으로 Compile합니다")로 알린다.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ALL_SAMPLE_EVENTS } from "../../domain";
-import { applyExecutorAction, createRun, saveRun } from "../../engine";
+import {
+  applyExecutorAction,
+  createRun,
+  loadRun,
+  saveRun,
+  subscribeRuns,
+} from "../../engine";
 import type { ExecutionRun, ExecutorAction } from "../../engine";
 import { useStudio } from "../state/GraphStudioContext";
 import MissionControlList from "./execution/MissionControlList";
@@ -46,6 +55,18 @@ function ExecutionPanel() {
   const [run, setRun] = useState<ExecutionRun | null>(null);
   const [selectedEventId, setSelectedEventId] = useState("");
   const [startError, setStartError] = useState<string | null>(null);
+
+  // 외부(현장 회신 뷰 등) saveRun 반영 — 자기 runId의 최신본으로 로컬 스냅샷을 갱신한다.
+  // 구독하지 않으면 구버전 스냅샷 기반 다음 dispatch가 외부 회신을 덮어쓴다(모듈 헤더 참조).
+  // 자기 자신의 saveRun notify도 받지만 같은 내용의 최신본으로 교체될 뿐이라 무해하다.
+  const runId = run?.runId ?? null;
+  useEffect(() => {
+    if (!runId) return;
+    return subscribeRuns(() => {
+      const latest = loadRun(runId);
+      if (latest) setRun(latest); // 삭제된 run은 현재 스냅샷 유지("새 실행"으로 정리).
+    });
+  }, [runId]);
 
   /** "실행 시작" — (필요 시 자동 Compile) → createRun → 저장. 실패 시 인라인 경고. */
   const handleStart = () => {

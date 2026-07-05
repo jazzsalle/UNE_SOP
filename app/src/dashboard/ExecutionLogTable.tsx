@@ -2,7 +2,8 @@
  * Execution Log Table — 실행이력 로그(ExecutionLogEntry[])를 관리자 점검용 표로 표시한다.
  * 열: 시간(loggedAt 로컬 표기 + 경과분) | 장소 | 구분(kind 한국어 라벨) | 임무내용 |
  * 상황전파 | 메시지. 지연(MISSION_DELAYED)은 warning, 실패(MISSION_FAILED/RUN_FAILED)는
- * danger 상태 토큰으로 행을 강조한다. 색상은 전부 CSS 변수 토큰 사용.
+ * danger, 조치 회신(ACTION_REPORTED)은 brand 상태 토큰으로 행을 강조한다.
+ * 색상은 전부 CSS 변수 토큰 사용.
  */
 import type { ExecutionLogEntry, ExecutionLogKind } from "../engine";
 
@@ -18,16 +19,22 @@ const LOG_KIND_LABEL: Record<ExecutionLogKind, string> = {
   PATROL_CHECKPOINT: "점검 수행",
   NOTIFICATION_SENT: "상황 전파",
   NOTIFICATION_ACKED: "전파 확인",
+  ACTION_REPORTED: "조치 회신",
   BOARD_RECORDED: "상황판 기록",
   RUN_COMPLETED: "실행 완료",
   RUN_FAILED: "실행 실패",
 };
 
-/** 강조 대상 kind → 행 변형 클래스 (지연=warning, 실패=danger). 나머지는 기본 행. */
+/**
+ * 강조 대상 kind → 행 변형 클래스 (지연=warning, 실패=danger, 조치 회신=brand).
+ * 조치 회신은 결과가 DONE/IMPOSSIBLE 양쪽일 수 있어 결과 중립인 brand 계열로 강조한다.
+ * 나머지는 기본 행.
+ */
 const LOG_KIND_ROW_CLASS: Partial<Record<ExecutionLogKind, string>> = {
   MISSION_DELAYED: "log-table__row--warning",
   MISSION_FAILED: "log-table__row--danger",
   RUN_FAILED: "log-table__row--danger",
+  ACTION_REPORTED: "log-table__row--brand",
 };
 
 /** ISO 시각 → 로컬 시간 표기. 파싱 실패 시 원문을 그대로 반환한다. */

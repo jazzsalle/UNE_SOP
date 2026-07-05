@@ -1,22 +1,27 @@
 /**
- * App 셸 — 상단 글로벌 내비(~48px)에서 "Graph Studio | 전자상황판 | 공간 모델" 뷰를 전환한다.
+ * App 셸 — 상단 글로벌 내비(~48px)에서 "Graph Studio | 전자상황판 | 현장 회신 | 공간 모델"
+ * 뷰를 전환한다.
  * react-router 미도입(Phase 5 선행 판단 1): App 레벨 상태로 뷰를 전환하되,
  * **모든 뷰를 마운트한 채 비활성 뷰는 `display:none`으로만 숨긴다** —
  * GraphStudio를 언마운트하면 React Flow 캔버스 편집 상태가 소실되기 때문.
  * (공간 모델 뷰는 정적 데이터라 lazy 렌더도 무방하나 기존 패턴을 그대로 따른다.)
+ * 현장 회신(responder) 뷰는 subscribeRuns의 same-tab 동기 notify로 대시보드와
+ * 실시간 연동되므로 같은 앱 내 뷰로 둔다(Phase 8 선행 결정 1).
  * 색상은 전부 디자인 시스템 CSS 변수 토큰 사용 (hex/rgb 하드코딩 금지).
  */
 import { useState, type CSSProperties } from "react";
 import DashboardPage from "./dashboard/DashboardPage";
+import ResponderPage from "./responder/ResponderPage";
 import SpatialModelPage from "./spatial/SpatialModelPage";
 import GraphStudio from "./studio/GraphStudio";
 
-type AppView = "studio" | "dashboard" | "spatial";
+type AppView = "studio" | "dashboard" | "responder" | "spatial";
 
 /** 글로벌 내비 탭 정의 — id와 표시 라벨. */
 const VIEW_TABS: { id: AppView; label: string }[] = [
   { id: "studio", label: "Graph Studio" },
   { id: "dashboard", label: "전자상황판" },
+  { id: "responder", label: "현장 회신" },
   { id: "spatial", label: "공간 모델" },
 ];
 
@@ -115,6 +120,14 @@ function App() {
           }}
         >
           <DashboardPage />
+        </div>
+        <div
+          style={{
+            ...viewWrapperBase,
+            display: activeView === "responder" ? "flex" : "none",
+          }}
+        >
+          <ResponderPage />
         </div>
         <div
           style={{
