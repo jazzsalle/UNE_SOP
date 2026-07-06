@@ -1,7 +1,7 @@
 # PROGRESS
 
 ## Last updated
-2026-07-05
+2026-07-06
 
 ## Current goal
 **전체 로드맵 완료** — Phase 1~9 (1~6단계) 전부 evaluator PASS. 이후 작업은 유지보수/개선(후보: LH2 등 단층 사이트 생성 토폴로지 exit 지정, 공간 모델 뷰 전환 시 사이트 자동 포커스, 시나리오 추가 등).
@@ -23,12 +23,14 @@
   - (에러2) 3D 뷰어 개선: ① 층 탭이 3D에도 적용(해당 층 슬래브/프리즘/시설물/노드/링크만) + 3D 전용 "전체 건물" 탭 신설 ② 전체 건물 모드 층간 explode(FLOOR_GAP 1.8m Y 오프셋 + 프리즘 높이 −0.05m)로 z-fighting(자글자글) 해소 ③ 로봇개 3D 모델(`buildRobotDog` 박스 8개 로우폴리) + "패트롤 데모 재생" — 경로 소스는 최신 run의 mission.patrol.routeNodeIds(subscribeRuns 연동, SOP 실행 반영) 폴백 pickPatrolEndpoints, 노드당 1.5초 등속 lerp+진행 방향 yaw+체크포인트 dwell(`webgl/patrolPath.ts` 순수 모듈, 24체크 PASS), renderer에 uModel 동적 변환 추가.
 
 ## In progress
-- **[미해결 — 회사 PC에서 이어서] 에러3 (`error/7월 5일 에러3.png`)**: SOP Group에서 자식을 밖으로 빼는 detach는 동작하나(헤더 "Task 0" 확인), 분리된 sop_task를 다시 그룹 프레임 안으로 드래그해 넣는 **attach가 동작하지 않는 것으로 보임**. 점검 포인트: `app/src/studio/state/dragReparent.ts`의 `resolveDragReparent`/`findExpandedGroupAt` — (a) attach 대상 판정이 sop_task 노드 중심점 기준인데 measured 크기 미확보 시 실패 가능성, (b) GraphCanvas `onNodeDragStop`이 reparentNodeAfterDrag를 호출하는 경로에서 attach 분기 도달 여부, (c) RF v12에서 parentId를 나중에 부여할 때 position 상대좌표 전환·배열 순서(부모 앞) 처리 확인. 재현: 로봇 시드 로드 → 자식 2개 밖으로 드래그 → 다시 그룹 안으로 드래그.
+- 없음
 
 ## Next steps
-1. **에러3 수정** — 그룹 재부착(attach) 미동작 (In progress 항목 참조)
-2. 사용자 시각 확인 잔여: 3D 층 탭/전체 건물/패트롤 데모 재생/층간 간격 (에러1 detach·프레임 확장은 동작 확인됨 — 에러3 캡처에서 확인)
-3. 개선 후보(미착수): LH2 등 단층 사이트 생성 토폴로지 exit 미지정(문서화된 동작), 공간 모델 뷰 전환 시 사이트/셋 자동 포커스, 통합 시나리오 추가, 튜토리얼 스텝 보강
+1. 사용자 시각 확인 잔여: 3D 층 탭/전체 건물/패트롤 데모 재생/층간 간격 (에러1 detach·프레임 확장은 동작 확인됨 — 에러3 캡처에서 확인), 에러3 수정분(그룹 재부착) 실기기 확인
+2. 개선 후보(미착수): LH2 등 단층 사이트 생성 토폴로지 exit 미지정(문서화된 동작), 공간 모델 뷰 전환 시 사이트/셋 자동 포커스, 통합 시나리오 추가, 튜토리얼 스텝 보강
+
+## Done this session (2026-07-06)
+- **에러3 해결 (그룹 재부착 미동작)** — 원인은 코드 결함이 아니라 **중심점 판정의 UX 결함**: headless Edge(puppeteer-core) E2E 재현으로 실측한 결과, 포인터가 대시 프레임 안(하단 20px 위)이어도 노드 **중심점**이 그룹 rect를 8px 벗어나면 attach가 조용히 실패(사용자 캡처에서 노드들이 프레임 바로 아래 걸친 것과 일치). 수정: 탈착/부착 판정점을 노드 중심점 → **드롭 시점 포인터 flow 좌표**로 변경(Figma식, 못 얻으면 중심점 폴백 — `dragReparent.ts` / `GraphCanvas.tsx`(onNodeDragStop: screenToFlowPosition, 마우스/터치 분기) / `GraphStudioContext.reparentNodeAfterDrag(dropPoint)`), attach 시 자식이 프레임을 넘치면 **그룹 프레임 자동 확장**(style+graphNode.size 동기화, `GROUP_FIT_PADDING 16` — graphIO 로드 시 보정과 동일 규약). E2E 회귀 체크 `app/tools/check-drag-reparent.mjs` 신설(자식 2개 탈착→재부착, 접기/펼치기 사이클 왕복, 에러3 경계 케이스 — 9체크 PASS, 실행법은 파일 헤더 주석). devDependency `puppeteer-core` 추가(브라우저 다운로드 없음, 시스템 Edge 사용). tsc/lint/build 통과.
 
 ## Blockers
 - 없음

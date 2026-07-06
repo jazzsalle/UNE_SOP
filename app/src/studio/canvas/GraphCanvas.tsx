@@ -128,11 +128,19 @@ function GraphCanvas() {
 
   // 드래그 종료 시 그룹 탈착/부착 — 자식을 프레임 밖에 놓으면 detach,
   // 독립 sop_task를 펼쳐진 그룹 위에 놓으면 attach (판정은 dragReparent가 담당).
+  // 판정점은 드롭 시점의 포인터 flow 좌표 — 노드 중심점 기준은 노드가 프레임에
+  // 걸쳐 있을 때 attach가 조용히 실패했다(에러3). 좌표를 못 얻으면 중심점 폴백.
   const onNodeDragStop = useCallback<OnNodeDrag<StudioNode>>(
-    (_event, node) => {
-      reparentNodeAfterDrag(node.id);
+    (event, node) => {
+      // 마우스는 event 자체, 터치는 changedTouches[0]에서 스크린 좌표를 얻는다.
+      const source = "clientX" in event ? event : event.changedTouches[0];
+      const dropPoint =
+        source && Number.isFinite(source.clientX) && Number.isFinite(source.clientY)
+          ? screenToFlowPosition({ x: source.clientX, y: source.clientY })
+          : undefined;
+      reparentNodeAfterDrag(node.id, dropPoint);
     },
-    [reparentNodeAfterDrag],
+    [reparentNodeAfterDrag, screenToFlowPosition],
   );
 
   return (

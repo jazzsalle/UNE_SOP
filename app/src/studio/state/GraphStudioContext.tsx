@@ -79,10 +79,11 @@ export interface GraphStudioApi {
   toggleGroupCollapse: (groupId: string) => void;
   /**
    * 노드 드래그 종료 시 그룹 탈착/부착 판정(dragReparent.resolveDragReparent) 적용.
+   * dropPoint는 드롭 시점의 포인터 flow 좌표(판정점) — 없으면 노드 중심점 폴백.
    * 자식을 프레임 밖에 놓으면 detach(절대좌표 전환), 독립 sop_task를 펼쳐진
    * 그룹 위에 놓으면 attach(상대좌표 전환). GraphCanvas onNodeDragStop이 호출한다.
    */
-  reparentNodeAfterDrag: (nodeId: string) => void;
+  reparentNodeAfterDrag: (nodeId: string, dropPoint?: XYPosition) => void;
   /** parentId === groupId인 자식 노드들의 도메인 GraphNode 목록. */
   getGroupChildren: (groupId: string) => GraphNode[];
 
@@ -263,9 +264,9 @@ export function GraphStudioProvider({ children }: { children: ReactNode }) {
   );
 
   const reparentNodeAfterDrag = useCallback(
-    (nodeId: string) => {
+    (nodeId: string, dropPoint?: XYPosition) => {
       // 변화 없으면(null) 기존 배열 유지 — 불필요한 리렌더 방지.
-      setNodes((prev) => resolveDragReparent(prev, nodeId) ?? prev);
+      setNodes((prev) => resolveDragReparent(prev, nodeId, dropPoint) ?? prev);
     },
     [setNodes],
   );
